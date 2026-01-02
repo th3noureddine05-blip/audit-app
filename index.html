@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>One Mobility - Audit System V32</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <style>
+        :root { --om-orange: #e67e22; --om-blue: #2c3e50; --success: #27ae60; --danger: #c0392b; --bg: #f4f7f6; }
+        body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg); color: #333; }
+        .hidden { display: none !important; }
+        header { background: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid var(--om-orange); position: sticky; top: 0; z-index: 100; }
+        .container { padding: 15px; max-width: 1000px; margin: auto; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 15px; }
+        #home-view { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle, #2c3e50, #000); color: white; text-align: center; }
+        .main-btn { border: 2px solid var(--om-orange); padding: 30px; border-radius: 20px; width: 260px; cursor: pointer; margin: 10px; transition: 0.3s; background: rgba(255,255,255,0.05); }
+        .btn-action { padding: 12px 20px; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; color: white; }
+        input, select { padding: 12px; border: 1px solid #ddd; border-radius: 10px; width: 100%; box-sizing: border-box; margin-top: 8px; font-size: 16px; }
+        .q-card { background: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; border-left: 6px solid var(--om-orange); }
+        .btn-ans { padding: 15px; border: 1px solid #eee; border-radius: 10px; cursor: pointer; background: white; flex: 1; font-weight: bold; }
+        .btn-ans.active { background: var(--om-orange) !important; color: white !important; }
+        #sig-canvas { border: 2px dashed #ccc; width: 100%; height: 160px; background: #fff; touch-action: none; border-radius: 10px; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; font-size: 14px; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; overflow-y: auto; }
+        .badge { padding: 4px 8px; border-radius: 5px; font-size: 12px; font-weight: bold; color: white; }
+        .module-block { border: 1px solid #ddd; padding: 15px; border-radius: 10px; margin-bottom: 20px; background: #fff; border-top: 4px solid var(--om-blue); }
+        .question-row { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; background: #f9f9f9; padding: 10px; border-radius: 8px; }
+    </style>
+</head>
+<body>
+
+    <div id="home-view">
+        <img src="https://i.ibb.co/v4m0YmH/One-Mobility.png" height="80">
+        <div id="qrcode" style="background:white; padding:10px; border-radius:10px; margin: 20px 0;"></div>
+        <div style="display:flex; flex-wrap:wrap; justify-content:center">
+            <div class="main-btn" onclick="showSection('setup-view')"><h2>OPÉRATEUR</h2><p>Lancer l'audit</p></div>
+            <div class="main-btn" onclick="openAdmin()"><h2>FORMATEUR</h2><p>Admin & Sheets</p></div>
+        </div>
+    </div>
+
+    <div id="setup-view" class="hidden">
+        <header><div>Identification</div><button onclick="location.reload()">Retour</button></header>
+        <div class="container">
+            <div class="card" style="max-width:480px; margin: auto;">
+                <label>Matricule</label><input id="mat" type="number" placeholder="Ex: 12345">
+                <label>Nom & Prénom</label><input id="nom" type="text" placeholder="Nom complet">
+                <label>Date d'embauche</label><input id="date_embauche" type="date">
+                <label>Module d'audit</label><select id="theme_select"></select>
+                <button class="btn-action" style="background:var(--om-orange); width:100%; margin-top:20px; padding:15px" onclick="checkEligibility()">COMMENCER</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="quiz-view" class="hidden">
+        <header><div id="active-theme"></div><div id="quiz-attempt-badge"></div></header>
+        <div class="container"><div id="questions-list"></div>
+            <div class="card"><label><b>Signature Obligatoire :</b></label><canvas id="sig-canvas"></canvas><button onclick="clearSig()" style="color:red; background:none; border:none; cursor:pointer">Effacer</button></div>
+            <button class="btn-action" style="background:var(--success); width:100%; padding:20px;" onclick="submitTest()">VALIDER LE TEST</button>
+        </div>
+    </div>
+
+    <div id="admin-view" class="hidden">
+        <header><div style="font-weight:bold">Dashboard Admin</div><button onclick="location.reload()">Quitter</button></header>
+        <div class="container">
+            <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:15px">
+                <button class="btn-action" style="background:var(--om-orange); flex:1" onclick="openEditor()">⚙️ GESTION DES MODULES</button>
+                <button class="btn-action" style="background:var(--success); flex:1" onclick="exportToExcel()">📊 EXCEL (G. SHEETS)</button>
+            </div>
+            <div class="card"><input type="text" id="search-input" onkeyup="renderAdminLogs()" placeholder="Chercher..."><table style="margin-top:10px"><thead><tr><th>Date</th><th>Mat.</th><th>Nom</th><th>Score</th><th>Test</th><th>Action</th></tr></thead><tbody id="admin-body"></tbody></table></div>
+        </div>
+    </div>
+
+    <div id="editor-modal" class="modal-overlay hidden">
+        <div class="container" style="margin-top:40px">
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px">
+                    <h2 style="margin:0">⚙️ Gestion du Contenu</h2>
+                    <button onclick="closeEditor()" style="font-size:30px; border:none; background:none; cursor:pointer">&times;</button>
+                </div>
+                <div style="background:#f0f4f8; padding:15px; border-radius:10px; margin-bottom:20px;">
+                    <label><b>Ajouter un Module Jdid :</b></label>
+                    <div style="display:flex; gap:10px; margin-top:5px">
+                        <input id="new-mod-name" type="text" placeholder="Titre du module">
+                        <button class="btn-action" style="background:var(--success)" onclick="addNewModule()">+ Créer</button>
+                    </div>
+                </div>
+                <div id="editor-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // METTRE TON LIEN GOOGLE ICI
+        const GOOGLE_SHEET_URL = "HNA_DIR_LINK_DYAL_GOOGLE_SCRIPT"; 
+
+        let DB = JSON.parse(localStorage.getItem('OM_DB')) || { "Exemple": [{ f: "Test?", a: "تجربة؟", r: true }] };
+        let logs = JSON.parse(localStorage.getItem('OM_LOGS')) || [];
+        let userAnswers = [], sigCtx, canvas, currentModule, currentAttempt = 1, isSigned = false;
+
+        window.onload = () => { new QRCode(document.getElementById("qrcode"), { text: window.location.href, width: 120, height: 120 }); updateThemeList(); };
+        function showSection(id) { document.querySelectorAll('body > div:not(header):not(.modal-overlay)').forEach(d => d.classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); }
+        function openAdmin() { if(prompt("Code Access:") === "123") { showSection('admin-view'); renderAdminLogs(); } }
+        function updateThemeList() { document.getElementById('theme_select').innerHTML = Object.keys(DB).map(t => `<option value="${t}">${t}</option>`).join(''); }
+        function openEditor() { document.getElementById('editor-modal').classList.remove('hidden'); renderEditor(); }
+        function closeEditor() { document.getElementById('editor-modal').classList.add('hidden'); updateThemeList(); }
+
+        function renderEditor() {
+            let h = '';
+            for(let t in DB) {
+                h += `
+                <div class="module-block">
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding-bottom:10px; margin-bottom:15px">
+                        <b style="font-size:18px; color:var(--om-blue)">${t}</b>
+                        <button onclick="deleteModule('${t}')" style="background:var(--danger); color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer">Supprimer</button>
+                    </div>
+                    <div>
+                        ${DB[t].map((q, i) => `
+                            <div class="question-row">
+                                <span style="font-weight:bold">${i+1}</span>
+                                <input style="flex:2" value="${q.f}" onchange="DB['${t}'][${i}].f=this.value; saveDB()" placeholder="Français">
+                                <input style="flex:2; text-align:right" dir="rtl" value="${q.a}" onchange="DB['${t}'][${i}].a=this.value; saveDB()" placeholder="العربية">
+                                <select style="width:90px" onchange="DB['${t}'][${i}].r=(this.value==='true'); saveDB()">
+                                    <option value="true" ${q.r?'selected':''}>VRAI</option>
+                                    <option value="false" ${!q.r?'selected':''}>FAUX</option>
+                                </select>
+                                <button onclick="deleteQ('${t}',${i})" style="color:red; border:none; background:none; font-size:20px; cursor:pointer">&times;</button>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <button class="btn-action" style="background:var(--om-orange); margin-top:10px; padding:8px 15px; font-size:13px" onclick="addQ('${t}')">+ Ajouter une Question</button>
+                </div>`;
+            }
+            document.getElementById('editor-content').innerHTML = h;
+        }
+
+        function saveDB() { localStorage.setItem('OM_DB', JSON.stringify(DB)); }
+        function addQ(t) { DB[t].push({f:"Nouvelle question", a:"سؤال جديد", r:true}); saveDB(); renderEditor(); }
+        function deleteQ(t,i) { if(confirm("Supprimer?")) { DB[t].splice(i,1); saveDB(); renderEditor(); } }
+        function deleteModule(t) { if(confirm("Supprimer tout le module?")) { delete DB[t]; saveDB(); renderEditor(); } }
+        function addNewModule() {
+            const n = document.getElementById('new-mod-name').value;
+            if(n && !DB[n]) { DB[n] = [{f:"Question 1", a:"سؤال 1", r:true}]; saveDB(); renderEditor(); document.getElementById('new-mod-name').value=''; }
+        }
+
+        function checkEligibility() {
+            const mat = document.getElementById('mat').value;
+            const theme = document.getElementById('theme_select').value;
+            if(!mat || !document.getElementById('nom').value) return alert("Remplir tout!");
+            const history = logs.filter(l => l.mat == mat && l.theme == theme);
+            if(history.some(l => l.score >= 75)) return alert("Déjà APTE.");
+            currentAttempt = history.length + 1;
+            startQuiz(theme);
+        }
+
+        function startQuiz(theme) {
+            currentModule = theme;
+            document.getElementById('active-theme').innerText = theme;
+            document.getElementById('quiz-attempt-badge').innerText = "Test N° " + currentAttempt;
+            showSection('quiz-view');
+            userAnswers = new Array(DB[theme].length).fill(null);
+            document.getElementById('questions-list').innerHTML = DB[theme].map((q, i) => `
+                <div class="q-card">
+                    <p><b>Q${i+1}:</b> ${q.f}</p><p dir="rtl" style="color:#666">${q.a}</p>
+                    <div style="display:flex; gap:10px; margin-top:10px">
+                        <button class="btn-ans" id="v-${i}" onclick="setAns(${i},true)">VRAI</button>
+                        <button class="btn-ans" id="f-${i}" onclick="setAns(${i},false)">FAUX</button>
+                    </div>
+                </div>`).join('');
+            setTimeout(initSig, 500);
+        }
+
+        function setAns(i, v) {
+            userAnswers[i] = v;
+            document.getElementById(`v-${i}`).className = v ? 'btn-ans active' : 'btn-ans';
+            document.getElementById(`f-${i}`).className = !v ? 'btn-ans active' : 'btn-ans';
+        }
+
+        function initSig() {
+            canvas = document.getElementById('sig-canvas'); sigCtx = canvas.getContext('2d');
+            canvas.width = canvas.offsetWidth; canvas.height = 160;
+            let draw = false;
+            const start = (e) => { draw = true; isSigned = true; sigCtx.beginPath(); };
+            const move = (e) => { if(!draw) return; const r = canvas.getBoundingClientRect(); sigCtx.lineTo((e.touches?e.touches[0].clientX:e.clientX)-r.left, (e.touches?e.touches[0].clientY:e.clientY)-r.top); sigCtx.stroke(); };
+            canvas.addEventListener('mousedown', start); canvas.addEventListener('mousemove', move);
+            canvas.addEventListener('touchstart', start); canvas.addEventListener('touchmove', move);
+            window.addEventListener('mouseup', () => draw = false);
+        }
+
+        function submitTest() {
+            if(userAnswers.includes(null) || !isSigned) return alert("Répondez à tout et signez !");
+            const score = Math.round(userAnswers.filter((a,i) => a === DB[currentModule][i].r).length / userAnswers.length * 100);
+            
+            const logEntry = { 
+                date: new Date().toLocaleDateString('fr-FR'), 
+                mat: document.getElementById('mat').value, 
+                nom: document.getElementById('nom').value, 
+                embauche: document.getElementById('date_embauche').value, 
+                theme: currentModule, 
+                attempt: currentAttempt, 
+                score: score
+            };
+
+            // Sauvegarde locale
+            logs.push({ ...logEntry, sig: canvas.toDataURL(), ans: [...userAnswers], questions: [...DB[currentModule]] });
+            localStorage.setItem('OM_LOGS', JSON.stringify(logs));
+
+            // ENVOI GOOGLE SHEETS
+            fetch(GOOGLE_SHEET_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                cache: 'no-cache',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(logEntry)
+            }).then(() => {
+                alert("Résultat enregistré avec succès !");
+                location.reload();
+            }).catch(err => {
+                alert("Erreur réseau, mais enregistré localement.");
+                location.reload();
+            });
+        }
+
+        function renderAdminLogs() {
+            const s = document.getElementById('search-input').value.toUpperCase();
+            document.getElementById('admin-body').innerHTML = logs.filter(l => l.nom.toUpperCase().includes(s) || l.mat.toString().includes(s)).reverse().map(l => `
+                <tr><td>${l.date}</td><td>${l.mat}</td><td>${l.nom}</td><td><span class="badge" style="background:${l.score>=75?'var(--success)':'var(--danger)'}">${l.score}%</span></td><td>T${l.attempt}</td><td><button onclick="downloadPDF(${logs.indexOf(l)})">PDF</button></td></tr>`).join('');
+        }
+
+        function downloadPDF(idx) {
+            const l = logs[idx];
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.setTextColor(230, 126, 34); doc.setFontSize(22); doc.setFont(undefined, 'bold');
+            doc.text("ONE MOBILITY", 105, 20, { align: 'center' });
+            doc.setTextColor(44, 62, 80); doc.setFontSize(16); doc.text("FICHE D'ÉVALUATION DES COMPÉTENCES", 105, 30, { align: 'center' });
+            doc.setLineWidth(0.5); doc.line(20, 35, 190, 35);
+            doc.setTextColor(0); doc.setFontSize(11);
+            doc.setFont(undefined, 'bold'); doc.text("Nom et Prénom :", 20, 45); doc.setFont(undefined, 'normal'); doc.text(`${l.nom}`, 55, 45);
+            doc.setFont(undefined, 'bold'); doc.text("Date du Test :", 120, 45); doc.setFont(undefined, 'normal'); doc.text(`${l.date}`, 155, 45);
+            doc.setFont(undefined, 'bold'); doc.text("Matricule :", 20, 53); doc.setFont(undefined, 'normal'); doc.text(`${l.mat}`, 55, 53);
+            doc.setFont(undefined, 'bold'); doc.text("Module :", 120, 53); doc.setFont(undefined, 'normal'); doc.text(`${l.theme}`, 155, 53);
+            doc.setFont(undefined, 'bold'); doc.text("Date d'embauche :", 20, 61); doc.setFont(undefined, 'normal'); doc.text(`${l.embauche || '-'}`, 55, 61);
+            doc.setFont(undefined, 'bold'); doc.text("Évaluation :", 120, 61); doc.setTextColor(230, 126, 34); doc.text(l.attempt === 1 ? "Premier Test" : "Deuxième Test", 155, 61);
+            doc.setTextColor(39, 174, 96); doc.setFontSize(14); doc.setFont(undefined, 'bold');
+            doc.text(`SCORE FINAL : ${l.score}% (${l.score >= 75 ? 'APTE' : 'INAPTE'})`, 105, 75, { align: 'center' });
+            doc.autoTable({
+                startY: 85,
+                head: [['#', "Critères d'évaluation", 'Réponse', 'Résultat']],
+                body: l.questions.map((q, i) => [i + 1, q.f, l.ans[i] ? 'VRAI' : 'FAUX', (l.ans[i] === q.r ? 'CONFORME' : 'NON CONFORME')]),
+                theme: 'grid',
+                headStyles: { fillColor: [44, 62, 80] }
+            });
+            const finalY = doc.lastAutoTable.finalY + 20;
+            doc.setTextColor(0); doc.text("Signature du Collaborateur", 35, finalY);
+            if (l.sig) doc.addImage(l.sig, 'PNG', 35, finalY + 5, 40, 15);
+            doc.save(`Audit_${l.mat}.pdf`);
+        }
+
+        function clearSig() { sigCtx.clearRect(0,0,canvas.width,canvas.height); isSigned = false; }
+
+        function exportToExcel() {
+            const data = logs.map(l => ({ 
+                Date_Test: l.date, 
+                Matricule: l.mat, 
+                Nom_Complet: l.nom, 
+                Date_Embauche: l.embauche || '-', 
+                Module: l.theme,
+                Tentative: "T"+l.attempt,
+                Score: l.score+"%",
+                Resultat: l.score >= 75 ? "APTE" : "INAPTE"
+            }));
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new(); 
+            XLSX.utils.book_append_sheet(wb, ws, "Audit_Logs");
+            XLSX.writeFile(wb, "Rapport_Audit_OneMobility.xlsx");
+        }
+    </script>
+</body>
+</html>
