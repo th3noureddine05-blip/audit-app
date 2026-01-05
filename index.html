@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>One Mobility - Audit System V32</title>
+    <title>One Mobility - Audit System</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
@@ -11,94 +11,152 @@
     
     <style>
         :root { --om-orange: #e67e22; --om-blue: #2c3e50; --success: #27ae60; --danger: #c0392b; --bg: #f4f7f6; }
-        body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg); }
+        body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg); color: #333; }
         .hidden { display: none !important; }
-        header { background: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid var(--om-orange); }
-        .container { padding: 15px; max-width: 800px; margin: auto; }
+        header { background: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid var(--om-orange); position: sticky; top: 0; z-index: 100; }
+        .container { padding: 15px; max-width: 1000px; margin: auto; }
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 15px; }
-        #home-view { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #000; color: white; text-align: center; }
-        .main-btn { border: 2px solid var(--om-orange); padding: 25px; border-radius: 15px; width: 220px; cursor: pointer; margin: 10px; }
-        .btn-action { padding: 12px 20px; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; color: white; width: 100%; }
+        #home-view { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle, #2c3e50, #000); color: white; text-align: center; }
+        .main-btn { border: 2px solid var(--om-orange); padding: 30px; border-radius: 20px; width: 260px; cursor: pointer; margin: 10px; transition: 0.3s; background: rgba(255,255,255,0.05); }
+        .btn-action { padding: 12px 20px; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; color: white; }
         input, select { padding: 12px; border: 1px solid #ddd; border-radius: 10px; width: 100%; box-sizing: border-box; margin-top: 8px; font-size: 16px; }
-        #sig-canvas { border: 2px dashed #ccc; width: 100%; height: 160px; background: #fff; touch-action: none; border-radius: 10px; }
-        .btn-ans { padding: 15px; border: 1px solid #eee; border-radius: 10px; cursor: pointer; flex: 1; background: white; font-weight: bold; }
-        .btn-ans.active { background: var(--om-orange); color: white; }
+        .q-card { background: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; border-left: 6px solid var(--om-orange); }
+        .btn-ans { padding: 15px; border: 1px solid #eee; border-radius: 10px; cursor: pointer; background: white; flex: 1; font-weight: bold; }
+        .btn-ans.active { background: var(--om-orange) !important; color: white !important; }
+        #sig-canvas { border: 2px dashed #ccc; width: 100%; height: 160px; background: #fff; touch-action: none; border-radius: 10px; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; font-size: 14px; }
+        #sheets-viewer { width: 100%; height: 600px; border: 2px solid #ddd; border-radius: 10px; }
     </style>
 </head>
 <body>
 
     <div id="home-view">
-        <img src="https://i.ibb.co/v4m0YmH/One-Mobility.png" height="70">
-        <div id="qrcode" style="background:white; padding:10px; border-radius:10px; margin: 20px;"></div>
-        <div class="main-btn" onclick="showSection('setup-view')"><h2>OPÉRATEUR</h2><p>Lancer l'audit</p></div>
-        <div class="main-btn" onclick="openAdmin()"><h2>FORMATEUR</h2><p>Admin & Dashboard</p></div>
+        <img src="https://i.ibb.co/v4m0YmH/One-Mobility.png" height="80">
+        <div id="qrcode" style="background:white; padding:10px; border-radius:10px; margin: 20px 0;"></div>
+        <div style="display:flex; flex-wrap:wrap; justify-content:center">
+            <div class="main-btn" onclick="showSection('setup-view')"><h2>OPÉRATEUR</h2><p>Lancer l'audit</p></div>
+            <div class="main-btn" onclick="openAdmin()"><h2>FORMATEUR</h2><p>Admin & Sheets</p></div>
+        </div>
     </div>
 
     <div id="setup-view" class="hidden">
         <header><div>Identification</div><button onclick="location.reload()">Retour</button></header>
         <div class="container">
-            <div class="card">
+            <div class="card" style="max-width:480px; margin: auto;">
                 <label>Matricule</label><input id="mat" type="number">
                 <label>Nom & Prénom</label><input id="nom" type="text">
                 <label>Date d'embauche</label><input id="date_embauche" type="date">
                 <label>Module</label><select id="theme_select"></select>
-                <button class="btn-action" style="background:var(--om-orange); margin-top:20px;" onclick="startQuiz()">COMMENCER</button>
+                <button class="btn-action" style="background:var(--om-orange); width:100%; margin-top:20px; padding:15px" onclick="checkEligibility()">SUIVANT</button>
             </div>
         </div>
     </div>
 
     <div id="quiz-view" class="hidden">
-        <header><div id="active-theme"></div></header>
+        <header><div id="active-theme"></div><div id="quiz-attempt" style="font-weight:bold; color:var(--om-orange)"></div></header>
         <div class="container">
             <div id="questions-list"></div>
             <div class="card">
-                <label><b>Signature :</b></label>
+                <label>Signature :</label>
                 <canvas id="sig-canvas"></canvas>
-                <button onclick="clearSig()" style="color:red; background:none; border:none;">Effacer</button>
+                <button onclick="clearSig()" style="color:red; background:none; border:none; cursor:pointer">Effacer</button>
             </div>
-            <button id="btn-submit" class="btn-action" style="background:var(--success); padding:20px;" onclick="submitTest()">VALIDER LE TEST</button>
+            <button class="btn-action" style="background:var(--success); width:100%; padding:20px; font-size:18px" onclick="submitTest()">VALIDER</button>
         </div>
     </div>
 
     <div id="admin-view" class="hidden">
-        <header><b>Dashboard Formateur</b><button onclick="location.reload()">Quitter</button></header>
+        <header><div style="font-weight:bold">Dashboard Admin</div><button onclick="location.reload()">Quitter</button></header>
         <div class="container">
-            <button class="btn-action" style="background:var(--om-orange); margin-bottom:10px" onclick="exportExcel()">EXPORTER EXCEL (Local)</button>
-            <div class="card" style="overflow-x:auto">
-                <table style="width:100%; border-collapse:collapse;">
-                    <thead><tr style="background:#eee"><th>Nom</th><th>Score</th><th>Test</th></tr></thead>
-                    <tbody id="admin-body"></tbody>
-                </table>
+            <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:15px">
+                <button class="btn-action" style="background:var(--om-orange); flex:1" onclick="openEditor()">⚙️ GESTION</button>
+                <button class="btn-action" style="background:var(--success); flex:1" onclick="exportToExcel()">📊 EXCEL</button>
+                <button class="btn-action" style="background:var(--om-blue); flex:1" onclick="toggleSheets()">📉 GOOGLE SHEETS</button>
+            </div>
+
+            <div id="sheets-container" class="hidden">
+                <div class="card">
+                    <iframe id="sheets-viewer" src="https://docs.google.com/spreadsheets/d/1Ky0apw_4lvqqHqB3XkKKymVZRnYEzoN3_wdfO_EMnlU/preview"></iframe>
+                </div>
+            </div>
+
+            <div class="card">
+                <input type="text" id="search-input" onkeyup="renderAdminLogs()" placeholder="Rechercher...">
+                <div style="overflow-x:auto; margin-top:15px;">
+                    <table>
+                        <thead><tr><th>Date</th><th>Mat.</th><th>Nom</th><th>Test</th><th>Score</th><th>Action</th></tr></thead>
+                        <tbody id="admin-body"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
 
-    <script>
-        https://script.google.com/macros/s/AKfycbxYQD1arNlj7JtscMoI4YYkKFfNKa2uli4Rxu6oxPQPlSdAKZ3mtpiryTYt4qrp_6qG-Q/exec = "URL_DYAL_SCRIPT_DYALK_HNA"; 
+    <div id="editor-modal" class="modal-overlay hidden">
+        <div class="card" style="width:90%; max-width:850px; max-height:85vh; overflow-y:auto; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:1001; border: 2px solid var(--om-orange);">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h3>Configuration</h3>
+                <button onclick="closeEditor()" style="font-size:30px; border:none; background:none; cursor:pointer">&times;</button>
+            </div>
+            <div id="editor-content"></div>
+        </div>
+    </div>
 
+    <script>
         let DB = JSON.parse(localStorage.getItem('OM_DB')) || {
-            "Qualité & 14 Principes": [{f:"Contrôle visuel effectué?", r:true}, {f:"Respect du standard?", r:true}],
-            "Flux & Lean": [{f:"Flux respecté?", r:true}]
+            "Flux, Composants & Lean": [
+                { f: "Un câble est un ensemble de fils et connecteurs.", a: "الكابل هو مجموعة من الأسلاك والموصلات.", r: true },
+                { f: "Le rôle du câble est de transporter l'énergie.", a: "دور الكابل هو نقل الطاقة.", r: true },
+                { f: "Le terminal assure la connexion entre deux câbles.", a: "المحطة الطرفية تضمن الاتصال بين كابلين.", r: true },
+                { f: "Le bouchon (seal) empêche l'entrée d'eau.", a: "السدادة (seal) تمنع دخول الماء.", r: true },
+                { f: "Le Lean sert uniquement à réduire les coûts.", a: "اللين يهدف فقط لتقليل التكاليف.", r: false },
+                { f: "5S : Trier, Ranger, Nettoyer, Standardiser, Respecter.", a: "5S: ترتيب، تنظيم، تنظيف، تقنين، احترام.", r: true }
+            ]
         };
         let logs = JSON.parse(localStorage.getItem('OM_LOGS')) || [];
-        let userAnswers = [], sigCtx, canvas, isSigned = false;
+        let userAnswers = [], sigCtx, canvas, currentModule, currentAttempt = 1, isSigned = false;
 
-        window.onload = () => { new QRCode(document.getElementById("qrcode"), { text: window.location.href, width: 120, height: 120 }); updateThemeList(); };
-        function showSection(id) { document.querySelectorAll('body > div:not(header)').forEach(d => d.classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); }
-        function openAdmin() { if(prompt("Code:") === "123") { showSection('admin-view'); renderLogs(); } }
+        window.onload = () => { 
+            new QRCode(document.getElementById("qrcode"), { text: window.location.href, width: 120, height: 120 });
+            updateThemeList();
+        };
+
+        function showSection(id) {
+            document.querySelectorAll('body > div:not(header):not(.modal-overlay)').forEach(d => d.classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        function toggleSheets() { document.getElementById('sheets-container').classList.toggle('hidden'); }
+        function openAdmin() { if(prompt("Code:") === "123") { showSection('admin-view'); renderAdminLogs(); } }
         function updateThemeList() { document.getElementById('theme_select').innerHTML = Object.keys(DB).map(t => `<option value="${t}">${t}</option>`).join(''); }
 
-        function startQuiz() {
+        function checkEligibility() {
+            const mat = document.getElementById('mat').value;
             const theme = document.getElementById('theme_select').value;
+            if(!mat || !document.getElementById('nom').value) return alert("Champs obligatoires !");
+            const history = logs.filter(l => l.mat == mat && l.theme == theme);
+            if(history.some(l => l.score >= 75)) return alert("✅ Déjà APTE.");
+            if(history.length >= 2) return alert("❌ Tentatives épuisées.");
+            currentAttempt = history.length + 1;
+            startQuiz(theme);
+        }
+
+        function startQuiz(theme) {
+            currentModule = theme;
             document.getElementById('active-theme').innerText = theme;
+            document.getElementById('quiz-attempt').innerText = currentAttempt === 1 ? "Premier Test" : "2ème Test";
             showSection('quiz-view');
             userAnswers = new Array(DB[theme].length).fill(null);
             document.getElementById('questions-list').innerHTML = DB[theme].map((q, i) => `
-                <div class="card"><p><b>Q${i+1}:</b> ${q.f}</p>
-                <div style="display:flex; gap:10px">
-                    <button class="btn-ans" id="v-${i}" onclick="setAns(${i},true)">VRAI</button>
-                    <button class="btn-ans" id="f-${i}" onclick="setAns(${i},false)">FAUX</button>
-                </div></div>`).join('');
+                <div class="q-card">
+                    <p style="font-size:18px;"><b>Q${i+1}:</b> ${q.f}</p>
+                    <p dir="rtl" style="color:#666;">${q.a}</p>
+                    <div style="display:flex; gap:10px; margin-top:10px">
+                        <button class="btn-ans" id="v-${i}" onclick="setAns(${i},true)">VRAI / صحيح</button>
+                        <button class="btn-ans" id="f-${i}" onclick="setAns(${i},false)">FAUX / خطأ</button>
+                    </div>
+                </div>`).join('');
             setTimeout(initSig, 500);
         }
 
@@ -109,51 +167,118 @@
         }
 
         function initSig() {
-            canvas = document.getElementById('sig-canvas'); sigCtx = canvas.getContext('2d');
-            canvas.width = canvas.offsetWidth; canvas.height = 160;
+            canvas = document.getElementById('sig-canvas'); sigCtx = canvas.getContext('2d'); canvas.width = canvas.offsetWidth;
             let draw = false;
-            const getPos = (e) => { const r = canvas.getBoundingClientRect(); return { x: (e.touches?e.touches[0].clientX:e.clientX)-r.left, y: (e.touches?e.touches[0].clientY:e.clientY)-r.top }; };
-            canvas.addEventListener('mousedown', (e) => { draw = true; isSigned = true; const p = getPos(e); sigCtx.beginPath(); sigCtx.moveTo(p.x, p.y); });
-            canvas.addEventListener('mousemove', (e) => { if(!draw) return; const p = getPos(e); sigCtx.lineTo(p.x, p.y); sigCtx.stroke(); });
-            canvas.addEventListener('touchstart', (e) => { e.preventDefault(); draw = true; isSigned = true; const p = getPos(e); sigCtx.beginPath(); sigCtx.moveTo(p.x, p.y); });
-            canvas.addEventListener('touchmove', (e) => { e.preventDefault(); if(!draw) return; const p = getPos(e); sigCtx.lineTo(p.x, p.y); sigCtx.stroke(); });
-            window.addEventListener('mouseup', () => draw = false); window.addEventListener('touchend', () => draw = false);
+            const start = (e) => { draw = true; isSigned = true; sigCtx.beginPath(); if(e.cancelable) e.preventDefault(); };
+            const move = (e) => { if(!draw) return; const r = canvas.getBoundingClientRect(); sigCtx.lineTo((e.touches?e.touches[0].clientX:e.clientX)-r.left, (e.touches?e.touches[0].clientY:e.clientY)-r.top); sigCtx.stroke(); };
+            canvas.addEventListener('mousedown', start); canvas.addEventListener('mousemove', move);
+            canvas.addEventListener('touchstart', start); canvas.addEventListener('touchmove', move);
+            window.addEventListener('mouseup', () => draw = false);
         }
 
-        function clearSig() { sigCtx.clearRect(0,0,canvas.width,canvas.height); isSigned = false; }
-
         function submitTest() {
-            if(userAnswers.includes(null) || !isSigned) return alert("Tout remplir et signer !");
-            const theme = document.getElementById('active-theme').innerText;
-            const score = Math.round(userAnswers.filter((a,i) => a === DB[theme][i].r).length / userAnswers.length * 100);
-            
-            const data = {
+            if(userAnswers.includes(null) || !isSigned) return alert("Incomplet !");
+            const score = Math.round(userAnswers.filter((a,i) => a === DB[currentModule][i].r).length / userAnswers.length * 100);
+            logs.push({
+                date: new Date().toLocaleDateString('fr-FR'),
                 mat: document.getElementById('mat').value,
                 nom: document.getElementById('nom').value,
                 embauche: document.getElementById('date_embauche').value,
-                theme: theme,
+                theme: currentModule,
+                attempt: currentAttempt,
                 score: score,
-                attempt: logs.filter(l => l.mat == document.getElementById('mat').value).length + 1
-            };
-
-            fetch(GOOGLE_SHEET_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(data) })
-            .then(() => {
-                logs.push({...data, date: new Date().toLocaleDateString()});
-                localStorage.setItem('OM_LOGS', JSON.stringify(logs));
-                alert("Validé !"); location.reload();
+                sig: canvas.toDataURL(),
+                ans: userAnswers,
+                questions: [...DB[currentModule]]
             });
+            localStorage.setItem('OM_LOGS', JSON.stringify(logs));
+            alert(score >= 75 ? "APTE ("+score+"%)" : "ÉCHEC ("+score+"%)");
+            location.reload();
         }
 
-        function renderLogs() {
-            document.getElementById('admin-body').innerHTML = logs.map(l => `<tr><td>${l.nom}</td><td>${l.score}%</td><td>T${l.attempt}</td></tr>`).join('');
+        function renderAdminLogs() {
+            const search = document.getElementById('search-input').value.toUpperCase();
+            const filtered = logs.filter(l => l.nom.toUpperCase().includes(search) || l.mat.toString().includes(search)).reverse();
+            document.getElementById('admin-body').innerHTML = filtered.map((l, i) => `
+                <tr><td>${l.date}</td><td>${l.mat}</td><td>${l.nom}</td><td>${l.attempt}</td><td><b style="color:${l.score>=75?'green':'red'}">${l.score}%</b></td><td><button onclick="downloadPDF(${logs.indexOf(l)})" style="background:var(--om-blue); color:white; border:none; padding:5px; border-radius:5px; cursor:pointer">PDF</button></td></tr>`).join('');
         }
 
-        function exportExcel() {
-            const ws = XLSX.utils.json_to_sheet(logs);
-            const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Logs");
-            XLSX.writeFile(wb, "Audits_OneMobility.xlsx");
+        // PDF TAFAWQI (L-9DIM)
+        function downloadPDF(idx) {
+            const l = logs[idx];
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // Header
+            doc.setFillColor(44, 62, 80);
+            doc.rect(0, 0, 210, 40, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(22);
+            doc.text("ONE MOBILITY - AUDIT", 105, 20, { align: 'center' });
+            doc.setFontSize(12);
+            doc.text("RAPPORT D'ÉVALUATION TECHNIQUE", 105, 30, { align: 'center' });
+
+            // Infos
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(11);
+            doc.setFont(undefined, 'bold');
+            doc.text(`Nom: ${l.nom}`, 20, 50);
+            doc.text(`Matricule: ${l.mat}`, 20, 58);
+            doc.text(`Date Audit: ${l.date}`, 130, 50);
+            doc.text(`Module: ${l.theme}`, 130, 58);
+            doc.text(`Embauche: ${l.embauche || '-'}`, 20, 66);
+            doc.text(`Test: ${l.attempt == 1 ? '1er Essai' : '2ème Essai'}`, 130, 66);
+
+            // Score Highlight
+            doc.setFillColor(l.score >= 75 ? 230 : 240, l.score >= 75 ? 245 : 230, l.score >= 75 ? 230 : 230);
+            doc.rect(20, 75, 170, 15, 'F');
+            doc.setTextColor(l.score >= 75 ? 39 : 192, l.score >= 75 ? 174 : 57, l.score >= 75 ? 96 : 43);
+            doc.setFontSize(16);
+            doc.text(`SCORE FINAL: ${l.score}% (${l.score >= 75 ? 'APTE' : 'INAPTE'})`, 105, 85, { align: 'center' });
+
+            // Table de détails
+            doc.autoTable({
+                startY: 95,
+                head: [['#', 'Critères / Questions', 'Réponse', 'Validation']],
+                body: l.questions.map((q, i) => [
+                    i + 1,
+                    q.f,
+                    l.ans[i] ? 'VRAI' : 'FAUX',
+                    (l.ans[i] === q.r) ? 'OK' : 'KO'
+                ]),
+                theme: 'grid',
+                headStyles: { fillColor: [230, 126, 34] },
+                columnStyles: { 0: { cellWidth: 10 }, 1: { cellWidth: 110 } }
+            });
+
+            // Signature
+            const finalY = doc.lastAutoTable.finalY + 20;
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+            doc.text("Signature du collaborateur :", 20, finalY);
+            if (l.sig) {
+                doc.addImage(l.sig, 'PNG', 20, finalY + 5, 50, 20);
+            }
+
+            doc.save(`Audit_${l.mat}_${l.nom}.pdf`);
         }
+
+        function exportToExcel() {
+            const ws = XLSX.utils.json_to_sheet(logs.map(l => ({ Date: l.date, Mat: l.mat, Nom: l.nom, Test: l.attempt, Score: l.score+"%", Result: l.score>=75?'APTE':'INAPTE' })));
+            const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Audit");
+            XLSX.writeFile(wb, "Rapport_Audit.xlsx");
+        }
+
+        function openEditor() { document.getElementById('editor-modal').classList.remove('hidden'); renderEditor(); }
+        function closeEditor() { document.getElementById('editor-modal').classList.add('hidden'); updateThemeList(); }
+        function renderEditor() {
+            let h = '';
+            for(let t in DB) {
+                h += `<div class="card" style="border:1px solid #ddd"><b>Module: ${t}</b><br><small>${DB[t].length} Questions</small></div>`;
+            }
+            document.getElementById('editor-content').innerHTML = h;
+        }
+        function clearSig() { sigCtx.clearRect(0,0,canvas.width,canvas.height); isSigned = false; }
     </script>
 </body>
 </html>
-
