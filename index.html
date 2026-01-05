@@ -7,44 +7,42 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
     <style>
-        :root { --om-orange: #e67e22; --om-blue: #2c3e50; --bg: #f4f7f6; }
-        body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg); touch-action: manipulation; }
+        :root { --om-orange: #e67e22; --om-blue: #2c3e50; --success: #27ae60; --danger: #c0392b; --bg: #f4f7f6; }
+        body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg); }
         .hidden { display: none !important; }
         header { background: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid var(--om-orange); }
-        .container { padding: 15px; max-width: 600px; margin: auto; }
+        .container { padding: 15px; max-width: 800px; margin: auto; }
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 15px; }
-        #home-view { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #000; color: white; }
-        .main-btn { border: 2px solid var(--om-orange); padding: 25px; border-radius: 15px; width: 220px; text-align: center; margin: 10px; cursor: pointer; }
-        input, select { padding: 12px; border: 1px solid #ddd; border-radius: 8px; width: 100%; margin-top: 8px; font-size: 16px; }
-        #sig-canvas { border: 2px dashed #ccc; width: 100%; height: 180px; background: #fff; touch-action: none; border-radius: 10px; margin-top: 10px; }
-        .btn-ans { padding: 15px; border: 1px solid #ddd; border-radius: 8px; flex: 1; background: white; font-weight: bold; }
-        .btn-ans.active { background: var(--om-orange); color: white; border-color: var(--om-orange); }
+        #home-view { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #000; color: white; text-align: center; }
+        .main-btn { border: 2px solid var(--om-orange); padding: 25px; border-radius: 15px; width: 220px; cursor: pointer; margin: 10px; }
+        .btn-action { padding: 12px 20px; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; color: white; width: 100%; }
+        input, select { padding: 12px; border: 1px solid #ddd; border-radius: 10px; width: 100%; box-sizing: border-box; margin-top: 8px; font-size: 16px; }
+        #sig-canvas { border: 2px dashed #ccc; width: 100%; height: 160px; background: #fff; touch-action: none; border-radius: 10px; }
+        .btn-ans { padding: 15px; border: 1px solid #eee; border-radius: 10px; cursor: pointer; flex: 1; background: white; font-weight: bold; }
+        .btn-ans.active { background: var(--om-orange); color: white; }
     </style>
 </head>
 <body>
 
     <div id="home-view">
         <img src="https://i.ibb.co/v4m0YmH/One-Mobility.png" height="70">
-        <div id="qrcode" style="background:white; padding:10px; margin: 20px;"></div>
-        <div class="main-btn" onclick="showSection('setup-view')">COMMENCER AUDIT</div>
+        <div id="qrcode" style="background:white; padding:10px; border-radius:10px; margin: 20px;"></div>
+        <div class="main-btn" onclick="showSection('setup-view')"><h2>OPÉRATEUR</h2><p>Lancer l'audit</p></div>
+        <div class="main-btn" onclick="openAdmin()"><h2>FORMATEUR</h2><p>Admin & Dashboard</p></div>
     </div>
 
     <div id="setup-view" class="hidden">
         <header><div>Identification</div><button onclick="location.reload()">Retour</button></header>
         <div class="container">
             <div class="card">
-                <label>Matricule OP</label><input id="mat" type="number">
-                <label>Nom et Prénom</label><input id="nom" type="text">
+                <label>Matricule</label><input id="mat" type="number">
+                <label>Nom & Prénom</label><input id="nom" type="text">
                 <label>Date d'embauche</label><input id="date_embauche" type="date">
-                <label>Module</label>
-                <select id="theme_select">
-                    <option value="Qualité & 14 Principes">Qualité & 14 Principes</option>
-                    <option value="Flux, Composants & Lean">Flux, Composants & Lean</option>
-                    <option value="Livre d'Accueil & HSE">Livre d'Accueil & HSE</option>
-                </select>
-                <button onclick="startQuiz()" style="background:var(--om-orange); color:white; border:none; width:100%; padding:15px; margin-top:20px; border-radius:8px; font-weight:bold;">SUIVANT</button>
+                <label>Module</label><select id="theme_select"></select>
+                <button class="btn-action" style="background:var(--om-orange); margin-top:20px;" onclick="startQuiz()">COMMENCER</button>
             </div>
         </div>
     </div>
@@ -54,32 +52,41 @@
         <div class="container">
             <div id="questions-list"></div>
             <div class="card">
-                <label><b>Signature OP obligatoire :</b></label>
+                <label><b>Signature :</b></label>
                 <canvas id="sig-canvas"></canvas>
-                <button onclick="clearSig()" style="color:red; background:none; border:none; margin-top:5px;">Effacer la signature</button>
+                <button onclick="clearSig()" style="color:red; background:none; border:none;">Effacer</button>
             </div>
-            <button id="btn-submit" onclick="submitTest()" style="background:#27ae60; color:white; border:none; width:100%; padding:20px; border-radius:8px; font-weight:bold; font-size:18px;">VALIDER LE TEST</button>
+            <button id="btn-submit" class="btn-action" style="background:var(--success); padding:20px;" onclick="submitTest()">VALIDER LE TEST</button>
+        </div>
+    </div>
+
+    <div id="admin-view" class="hidden">
+        <header><b>Dashboard Formateur</b><button onclick="location.reload()">Quitter</button></header>
+        <div class="container">
+            <button class="btn-action" style="background:var(--om-orange); margin-bottom:10px" onclick="exportExcel()">EXPORTER EXCEL (Local)</button>
+            <div class="card" style="overflow-x:auto">
+                <table style="width:100%; border-collapse:collapse;">
+                    <thead><tr style="background:#eee"><th>Nom</th><th>Score</th><th>Test</th></tr></thead>
+                    <tbody id="admin-body"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 
     <script>
-        // DAROURI: 7et l-URL dyal Google Script hna
-        const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbz1T05tWjwee0OHig-EO0jWrB5HtVQI-X8KJyjgOiQt2B9CSeUYYjfwwz3qS7lQJbMcSg/exec"; 
+        const GOOGLE_SHEET_URL = "URL_DYAL_SCRIPT_DYALK_HNA"; 
 
-        const DB = {
-            "Qualité & 14 Principes": [{f:"Est-ce que l'opérateur vérifie son matériel?", r:true}, {f:"Le respect des 14 principes est-il appliqué?", r:true}],
-            "Flux, Composants & Lean": [{f:"Le flux est-il respecté?", r:true}],
-            "Livre d'Accueil & HSE": [{f:"L'EPI est-il porté?", r:true}]
+        let DB = JSON.parse(localStorage.getItem('OM_DB')) || {
+            "Qualité & 14 Principes": [{f:"Contrôle visuel effectué?", r:true}, {f:"Respect du standard?", r:true}],
+            "Flux & Lean": [{f:"Flux respecté?", r:true}]
         };
-
+        let logs = JSON.parse(localStorage.getItem('OM_LOGS')) || [];
         let userAnswers = [], sigCtx, canvas, isSigned = false;
 
-        window.onload = () => { new QRCode(document.getElementById("qrcode"), { text: window.location.href, width: 120, height: 120 }); };
-
-        function showSection(id) { 
-            document.querySelectorAll('body > div:not(header)').forEach(d => d.classList.add('hidden')); 
-            document.getElementById(id).classList.remove('hidden'); 
-        }
+        window.onload = () => { new QRCode(document.getElementById("qrcode"), { text: window.location.href, width: 120, height: 120 }); updateThemeList(); };
+        function showSection(id) { document.querySelectorAll('body > div:not(header)').forEach(d => d.classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); }
+        function openAdmin() { if(prompt("Code:") === "123") { showSection('admin-view'); renderLogs(); } }
+        function updateThemeList() { document.getElementById('theme_select').innerHTML = Object.keys(DB).map(t => `<option value="${t}">${t}</option>`).join(''); }
 
         function startQuiz() {
             const theme = document.getElementById('theme_select').value;
@@ -87,14 +94,12 @@
             showSection('quiz-view');
             userAnswers = new Array(DB[theme].length).fill(null);
             document.getElementById('questions-list').innerHTML = DB[theme].map((q, i) => `
-                <div class="card">
-                    <p><b>Q${i+1}:</b> ${q.f}</p>
-                    <div style="display:flex; gap:10px">
-                        <button class="btn-ans" id="v-${i}" onclick="setAns(${i},true)">VRAI</button>
-                        <button class="btn-ans" id="f-${i}" onclick="setAns(${i},false)">FAUX</button>
-                    </div>
-                </div>`).join('');
-            initSig();
+                <div class="card"><p><b>Q${i+1}:</b> ${q.f}</p>
+                <div style="display:flex; gap:10px">
+                    <button class="btn-ans" id="v-${i}" onclick="setAns(${i},true)">VRAI</button>
+                    <button class="btn-ans" id="f-${i}" onclick="setAns(${i},false)">FAUX</button>
+                </div></div>`).join('');
+            setTimeout(initSig, 500);
         }
 
         function setAns(i, v) {
@@ -105,55 +110,48 @@
 
         function initSig() {
             canvas = document.getElementById('sig-canvas'); sigCtx = canvas.getContext('2d');
-            canvas.width = canvas.offsetWidth; canvas.height = 180;
-            let drawing = false;
-
-            const getPos = (e) => {
-                const rect = canvas.getBoundingClientRect();
-                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-                return { x: clientX - rect.left, y: clientY - rect.top };
-            };
-
-            const start = (e) => { e.preventDefault(); drawing = true; isSigned = true; const p = getPos(e); sigCtx.beginPath(); sigCtx.moveTo(p.x, p.y); };
-            const move = (e) => { if(!drawing) return; e.preventDefault(); const p = getPos(e); sigCtx.lineTo(p.x, p.y); sigCtx.stroke(); };
-            const stop = () => { drawing = false; };
-
-            canvas.addEventListener('mousedown', start); canvas.addEventListener('mousemove', move); window.addEventListener('mouseup', stop);
-            canvas.addEventListener('touchstart', start, {passive: false}); canvas.addEventListener('touchmove', move, {passive: false}); canvas.addEventListener('touchend', stop);
+            canvas.width = canvas.offsetWidth; canvas.height = 160;
+            let draw = false;
+            const getPos = (e) => { const r = canvas.getBoundingClientRect(); return { x: (e.touches?e.touches[0].clientX:e.clientX)-r.left, y: (e.touches?e.touches[0].clientY:e.clientY)-r.top }; };
+            canvas.addEventListener('mousedown', (e) => { draw = true; isSigned = true; const p = getPos(e); sigCtx.beginPath(); sigCtx.moveTo(p.x, p.y); });
+            canvas.addEventListener('mousemove', (e) => { if(!draw) return; const p = getPos(e); sigCtx.lineTo(p.x, p.y); sigCtx.stroke(); });
+            canvas.addEventListener('touchstart', (e) => { e.preventDefault(); draw = true; isSigned = true; const p = getPos(e); sigCtx.beginPath(); sigCtx.moveTo(p.x, p.y); });
+            canvas.addEventListener('touchmove', (e) => { e.preventDefault(); if(!draw) return; const p = getPos(e); sigCtx.lineTo(p.x, p.y); sigCtx.stroke(); });
+            window.addEventListener('mouseup', () => draw = false); window.addEventListener('touchend', () => draw = false);
         }
 
         function clearSig() { sigCtx.clearRect(0,0,canvas.width,canvas.height); isSigned = false; }
 
         function submitTest() {
-            if(userAnswers.includes(null) || !isSigned) return alert("Remplissez tout et signez !");
-            
-            const btn = document.getElementById('btn-submit');
-            btn.disabled = true; btn.innerText = "ENVOI EN COURS...";
-
+            if(userAnswers.includes(null) || !isSigned) return alert("Tout remplir et signer !");
             const theme = document.getElementById('active-theme').innerText;
             const score = Math.round(userAnswers.filter((a,i) => a === DB[theme][i].r).length / userAnswers.length * 100);
-
-            const payload = {
+            
+            const data = {
                 mat: document.getElementById('mat').value,
                 nom: document.getElementById('nom').value,
                 embauche: document.getElementById('date_embauche').value,
                 theme: theme,
                 score: score,
-                attempt: 1
+                attempt: logs.filter(l => l.mat == document.getElementById('mat').value).length + 1
             };
 
-            fetch(GOOGLE_SHEET_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                body: JSON.stringify(payload)
-            }).then(() => {
-                alert("✅ Test validé et envoyé au Google Sheet !");
-                location.reload();
-            }).catch(() => {
-                alert("Erreur d'envoi. Vérifiez votre connexion.");
-                btn.disabled = false; btn.innerText = "VALIDER LE TEST";
+            fetch(GOOGLE_SHEET_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(data) })
+            .then(() => {
+                logs.push({...data, date: new Date().toLocaleDateString()});
+                localStorage.setItem('OM_LOGS', JSON.stringify(logs));
+                alert("Validé !"); location.reload();
             });
+        }
+
+        function renderLogs() {
+            document.getElementById('admin-body').innerHTML = logs.map(l => `<tr><td>${l.nom}</td><td>${l.score}%</td><td>T${l.attempt}</td></tr>`).join('');
+        }
+
+        function exportExcel() {
+            const ws = XLSX.utils.json_to_sheet(logs);
+            const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Logs");
+            XLSX.writeFile(wb, "Audits_OneMobility.xlsx");
         }
     </script>
 </body>
