@@ -7,175 +7,94 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
     <style>
-        :root { --om-orange: #e67e22; --om-blue: #2c3e50; --success: #27ae60; --danger: #c0392b; --bg: #f4f7f6; }
-        body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg); color: #333; }
+        :root { --om-orange: #e67e22; --om-blue: #2c3e50; --bg: #f4f7f6; }
+        body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg); touch-action: manipulation; }
         .hidden { display: none !important; }
-        header { background: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid var(--om-orange); position: sticky; top: 0; z-index: 100; }
-        .container { padding: 15px; max-width: 1000px; margin: auto; }
+        header { background: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid var(--om-orange); }
+        .container { padding: 15px; max-width: 600px; margin: auto; }
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 15px; }
-        #home-view { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle, #2c3e50, #000); color: white; text-align: center; }
-        .main-btn { border: 2px solid var(--om-orange); padding: 30px; border-radius: 20px; width: 260px; cursor: pointer; margin: 10px; transition: 0.3s; background: rgba(255,255,255,0.05); }
-        .btn-action { padding: 12px 20px; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; color: white; }
-        input, select { padding: 12px; border: 1px solid #ddd; border-radius: 10px; width: 100%; box-sizing: border-box; margin-top: 8px; font-size: 16px; }
-        .q-card { background: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; border-left: 6px solid var(--om-orange); }
-        .btn-ans { padding: 15px; border: 1px solid #eee; border-radius: 10px; cursor: pointer; background: white; flex: 1; font-weight: bold; }
-        .btn-ans.active { background: var(--om-orange) !important; color: white !important; }
-        #sig-canvas { border: 2px dashed #ccc; width: 100%; height: 160px; background: #fff; touch-action: none; border-radius: 10px; margin-top: 10px; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; font-size: 14px; }
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; overflow-y: auto; }
-        .badge { padding: 4px 8px; border-radius: 5px; font-size: 12px; font-weight: bold; color: white; }
-        .module-block { border: 1px solid #ddd; padding: 15px; border-radius: 10px; margin-bottom: 20px; background: #fff; border-top: 4px solid var(--om-blue); }
-        .question-row { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; background: #f9f9f9; padding: 10px; border-radius: 8px; }
+        #home-view { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #000; color: white; }
+        .main-btn { border: 2px solid var(--om-orange); padding: 25px; border-radius: 15px; width: 220px; text-align: center; margin: 10px; cursor: pointer; }
+        input, select { padding: 12px; border: 1px solid #ddd; border-radius: 8px; width: 100%; margin-top: 8px; font-size: 16px; }
+        #sig-canvas { border: 2px dashed #ccc; width: 100%; height: 180px; background: #fff; touch-action: none; border-radius: 10px; margin-top: 10px; }
+        .btn-ans { padding: 15px; border: 1px solid #ddd; border-radius: 8px; flex: 1; background: white; font-weight: bold; }
+        .btn-ans.active { background: var(--om-orange); color: white; border-color: var(--om-orange); }
     </style>
 </head>
 <body>
 
     <div id="home-view">
-        <img src="https://i.ibb.co/v4m0YmH/One-Mobility.png" height="80">
-        <div id="qrcode" style="background:white; padding:10px; border-radius:10px; margin: 20px 0;"></div>
-        <div style="display:flex; flex-wrap:wrap; justify-content:center">
-            <div class="main-btn" onclick="showSection('setup-view')"><h2>OPÉRATEUR</h2><p>Lancer l'audit</p></div>
-            <div class="main-btn" onclick="openAdmin()"><h2>FORMATEUR</h2><p>Admin & Sheets</p></div>
-        </div>
+        <img src="https://i.ibb.co/v4m0YmH/One-Mobility.png" height="70">
+        <div id="qrcode" style="background:white; padding:10px; margin: 20px;"></div>
+        <div class="main-btn" onclick="showSection('setup-view')">COMMENCER AUDIT</div>
     </div>
 
     <div id="setup-view" class="hidden">
         <header><div>Identification</div><button onclick="location.reload()">Retour</button></header>
         <div class="container">
-            <div class="card" style="max-width:480px; margin: auto;">
-                <label>Matricule</label><input id="mat" type="number" placeholder="Ex: 12345">
-                <label>Nom & Prénom</label><input id="nom" type="text" placeholder="Nom complet">
+            <div class="card">
+                <label>Matricule OP</label><input id="mat" type="number">
+                <label>Nom et Prénom</label><input id="nom" type="text">
                 <label>Date d'embauche</label><input id="date_embauche" type="date">
-                <label>Module d'audit</label><select id="theme_select"></select>
-                <button class="btn-action" style="background:var(--om-orange); width:100%; margin-top:20px; padding:15px" onclick="checkEligibility()">COMMENCER</button>
+                <label>Module</label>
+                <select id="theme_select">
+                    <option value="Qualité & 14 Principes">Qualité & 14 Principes</option>
+                    <option value="Flux, Composants & Lean">Flux, Composants & Lean</option>
+                    <option value="Livre d'Accueil & HSE">Livre d'Accueil & HSE</option>
+                </select>
+                <button onclick="startQuiz()" style="background:var(--om-orange); color:white; border:none; width:100%; padding:15px; margin-top:20px; border-radius:8px; font-weight:bold;">SUIVANT</button>
             </div>
         </div>
     </div>
 
     <div id="quiz-view" class="hidden">
-        <header><div id="active-theme"></div><div id="quiz-attempt-badge"></div></header>
-        <div class="container"><div id="questions-list"></div>
-            <div class="card"><label><b>Signature Obligatoire :</b></label><canvas id="sig-canvas"></canvas><button onclick="clearSig()" style="color:red; background:none; border:none; cursor:pointer">Effacer</button></div>
-            <button id="btn-submit" class="btn-action" style="background:var(--success); width:100%; padding:20px;" onclick="submitTest()">VALIDER LE TEST</button>
-        </div>
-    </div>
-
-    <div id="admin-view" class="hidden">
-        <header><div style="font-weight:bold">Dashboard Admin</div><button onclick="location.reload()">Quitter</button></header>
+        <header><div id="active-theme"></div></header>
         <div class="container">
-            <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:15px">
-                <button class="btn-action" style="background:var(--om-orange); flex:1" onclick="openEditor()">⚙️ GESTION DES MODULES</button>
-                <button class="btn-action" style="background:var(--success); flex:1" onclick="exportToExcel()">📊 EXCEL (LOCAL)</button>
-            </div>
-            <div class="card"><input type="text" id="search-input" onkeyup="renderAdminLogs()" placeholder="Chercher..."><table style="margin-top:10px"><thead><tr><th>Date</th><th>Mat.</th><th>Nom</th><th>Score</th><th>Test</th><th>Action</th></tr></thead><tbody id="admin-body"></tbody></table></div>
-        </div>
-    </div>
-
-    <div id="editor-modal" class="modal-overlay hidden">
-        <div class="container" style="margin-top:40px">
+            <div id="questions-list"></div>
             <div class="card">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px">
-                    <h2 style="margin:0">⚙️ Gestion du Contenu</h2>
-                    <button onclick="closeEditor()" style="font-size:30px; border:none; background:none; cursor:pointer">&times;</button>
-                </div>
-                <div style="background:#f0f4f8; padding:15px; border-radius:10px; margin-bottom:20px;">
-                    <label><b>Ajouter un Module :</b></label>
-                    <div style="display:flex; gap:10px; margin-top:5px">
-                        <input id="new-mod-name" type="text" placeholder="Titre du module">
-                        <button class="btn-action" style="background:var(--success)" onclick="addNewModule()">+ Créer</button>
-                    </div>
-                </div>
-                <div id="editor-content"></div>
+                <label><b>Signature OP obligatoire :</b></label>
+                <canvas id="sig-canvas"></canvas>
+                <button onclick="clearSig()" style="color:red; background:none; border:none; margin-top:5px;">Effacer la signature</button>
             </div>
+            <button id="btn-submit" onclick="submitTest()" style="background:#27ae60; color:white; border:none; width:100%; padding:20px; border-radius:8px; font-weight:bold; font-size:18px;">VALIDER LE TEST</button>
         </div>
     </div>
 
     <script>
-        // URL TESTÉ ET VALIDÉ
+        // DAROURI: 7et l-URL dyal Google Script hna
         const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbz1T05tWjwee0OHig-EO0jWrB5HtVQI-X8KJyjgOiQt2B9CSeUYYjfwwz3qS7lQJbMcSg/exec"; 
 
-        let DB = JSON.parse(localStorage.getItem('OM_DB')) || { "SÉCURITÉ": [{ f: "Port des EPI?", a: "هل يرتدي معدات الحماية؟", r: true }] };
-        let logs = JSON.parse(localStorage.getItem('OM_LOGS')) || [];
-        let userAnswers = [], sigCtx, canvas, currentModule, currentAttempt = 1, isSigned = false;
-
-        window.onload = () => { 
-            new QRCode(document.getElementById("qrcode"), { text: window.location.href, width: 120, height: 120 }); 
-            updateThemeList(); 
+        const DB = {
+            "Qualité & 14 Principes": [{f:"Est-ce que l'opérateur vérifie son matériel?", r:true}, {f:"Le respect des 14 principes est-il appliqué?", r:true}],
+            "Flux, Composants & Lean": [{f:"Le flux est-il respecté?", r:true}],
+            "Livre d'Accueil & HSE": [{f:"L'EPI est-il porté?", r:true}]
         };
 
-        function showSection(id) { document.querySelectorAll('body > div:not(header):not(.modal-overlay)').forEach(d => d.classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); }
-        function openAdmin() { if(prompt("Code Access (Défaut: 123):") === "123") { showSection('admin-view'); renderAdminLogs(); } }
-        function updateThemeList() { document.getElementById('theme_select').innerHTML = Object.keys(DB).map(t => `<option value="${t}">${t}</option>`).join(''); }
-        function openEditor() { document.getElementById('editor-modal').classList.remove('hidden'); renderEditor(); }
-        function closeEditor() { document.getElementById('editor-modal').classList.add('hidden'); updateThemeList(); }
+        let userAnswers = [], sigCtx, canvas, isSigned = false;
 
-        function renderEditor() {
-            let h = '';
-            for(let t in DB) {
-                h += `
-                <div class="module-block">
-                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding-bottom:10px; margin-bottom:15px">
-                        <b style="font-size:18px; color:var(--om-blue)">${t}</b>
-                        <button onclick="deleteModule('${t}')" style="background:var(--danger); color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer">Supprimer</button>
-                    </div>
-                    <div>
-                        ${DB[t].map((q, i) => `
-                            <div class="question-row">
-                                <span style="font-weight:bold">${i+1}</span>
-                                <input style="flex:2" value="${q.f}" onchange="DB['${t}'][${i}].f=this.value; saveDB()" placeholder="Français">
-                                <input style="flex:2; text-align:right" dir="rtl" value="${q.a}" onchange="DB['${t}'][${i}].a=this.value; saveDB()" placeholder="العربية">
-                                <select style="width:90px" onchange="DB['${t}'][${i}].r=(this.value==='true'); saveDB()">
-                                    <option value="true" ${q.r?'selected':''}>VRAI</option>
-                                    <option value="false" ${!q.r?'selected':''}>FAUX</option>
-                                </select>
-                                <button onclick="deleteQ('${t}',${i})" style="color:red; border:none; background:none; font-size:20px; cursor:pointer">&times;</button>
-                            </div>
-                        `).join('')}
-                    </div>
-                    <button class="btn-action" style="background:var(--om-orange); margin-top:10px; padding:8px 15px; font-size:13px" onclick="addQ('${t}')">+ Ajouter une Question</button>
-                </div>`;
-            }
-            document.getElementById('editor-content').innerHTML = h;
+        window.onload = () => { new QRCode(document.getElementById("qrcode"), { text: window.location.href, width: 120, height: 120 }); };
+
+        function showSection(id) { 
+            document.querySelectorAll('body > div:not(header)').forEach(d => d.classList.add('hidden')); 
+            document.getElementById(id).classList.remove('hidden'); 
         }
 
-        function saveDB() { localStorage.setItem('OM_DB', JSON.stringify(DB)); }
-        function addQ(t) { DB[t].push({f:"Nouvelle question", a:"سؤال جديد", r:true}); saveDB(); renderEditor(); }
-        function deleteQ(t,i) { if(confirm("Supprimer?")) { DB[t].splice(i,1); saveDB(); renderEditor(); } }
-        function deleteModule(t) { if(confirm("Supprimer tout le module?")) { delete DB[t]; saveDB(); renderEditor(); } }
-        function addNewModule() {
-            const n = document.getElementById('new-mod-name').value;
-            if(n && !DB[n]) { DB[n] = [{f:"Question 1", a:"سؤال 1", r:true}]; saveDB(); renderEditor(); document.getElementById('new-mod-name').value=''; }
-        }
-
-        function checkEligibility() {
-            const mat = document.getElementById('mat').value;
+        function startQuiz() {
             const theme = document.getElementById('theme_select').value;
-            if(!mat || !document.getElementById('nom').value) return alert("Veuillez remplir tous les champs!");
-            const history = logs.filter(l => l.mat == mat && l.theme == theme);
-            if(history.some(l => l.score >= 75)) return alert("Cet opérateur est déjà APTE pour ce module.");
-            currentAttempt = history.length + 1;
-            startQuiz(theme);
-        }
-
-        function startQuiz(theme) {
-            currentModule = theme;
             document.getElementById('active-theme').innerText = theme;
-            document.getElementById('quiz-attempt-badge').innerText = "Tentative N° " + currentAttempt;
             showSection('quiz-view');
             userAnswers = new Array(DB[theme].length).fill(null);
             document.getElementById('questions-list').innerHTML = DB[theme].map((q, i) => `
-                <div class="q-card">
-                    <p><b>Q${i+1}:</b> ${q.f}</p><p dir="rtl" style="color:#666">${q.a}</p>
-                    <div style="display:flex; gap:10px; margin-top:10px">
+                <div class="card">
+                    <p><b>Q${i+1}:</b> ${q.f}</p>
+                    <div style="display:flex; gap:10px">
                         <button class="btn-ans" id="v-${i}" onclick="setAns(${i},true)">VRAI</button>
                         <button class="btn-ans" id="f-${i}" onclick="setAns(${i},false)">FAUX</button>
                     </div>
                 </div>`).join('');
-            setTimeout(initSig, 500);
+            initSig();
         }
 
         function setAns(i, v) {
@@ -186,103 +105,55 @@
 
         function initSig() {
             canvas = document.getElementById('sig-canvas'); sigCtx = canvas.getContext('2d');
-            canvas.width = canvas.offsetWidth; canvas.height = 160;
-            let draw = false;
-            const start = (e) => { e.preventDefault(); draw = true; isSigned = true; sigCtx.beginPath(); };
-            const move = (e) => { 
-                if(!draw) return; e.preventDefault();
-                const r = canvas.getBoundingClientRect(); 
-                const x = (e.touches ? e.touches[0].clientX : e.clientX) - r.left;
-                const y = (e.touches ? e.touches[0].clientY : e.clientY) - r.top;
-                sigCtx.lineTo(x, y); sigCtx.stroke(); 
-            };
-            canvas.addEventListener('mousedown', start); canvas.addEventListener('mousemove', move);
-            canvas.addEventListener('touchstart', start, {passive: false}); canvas.addEventListener('touchmove', move, {passive: false});
-            window.addEventListener('mouseup', () => draw = false); window.addEventListener('touchend', () => draw = false);
-        }
+            canvas.width = canvas.offsetWidth; canvas.height = 180;
+            let drawing = false;
 
-        function submitTest() {
-            if(userAnswers.includes(null) || !isSigned) return alert("Répondez à tout et signez !");
-            
-            const score = Math.round(userAnswers.filter((a,i) => a === DB[currentModule][i].r).length / userAnswers.length * 100);
-            const btn = document.getElementById('btn-submit');
-            btn.disabled = true; btn.innerText = "ENVOI EN COURS...";
-
-            const logEntry = { 
-                date: new Date().toLocaleDateString('fr-FR'), 
-                mat: document.getElementById('mat').value, 
-                nom: document.getElementById('nom').value, 
-                embauche: document.getElementById('date_embauche').value, 
-                theme: currentModule, 
-                attempt: currentAttempt, 
-                score: score
+            const getPos = (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                return { x: clientX - rect.left, y: clientY - rect.top };
             };
 
-            // 1. Sauvegarde Locale
-            logs.push({ ...logEntry, sig: canvas.toDataURL(), ans: [...userAnswers], questions: [...DB[currentModule]] });
-            localStorage.setItem('OM_LOGS', JSON.stringify(logs));
+            const start = (e) => { e.preventDefault(); drawing = true; isSigned = true; const p = getPos(e); sigCtx.beginPath(); sigCtx.moveTo(p.x, p.y); };
+            const move = (e) => { if(!drawing) return; e.preventDefault(); const p = getPos(e); sigCtx.lineTo(p.x, p.y); sigCtx.stroke(); };
+            const stop = () => { drawing = false; };
 
-            // 2. Envoi Google Sheets (no-cors)
-            fetch(GOOGLE_SHEET_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                cache: 'no-cache',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(logEntry)
-            }).then(() => {
-                alert("✅ VALIDÉ ! Score: " + score + "%\nDonnées envoyées au Google Sheets.");
-                location.reload();
-            }).catch(err => {
-                alert("Enregistré localement (Erreur connexion).");
-                location.reload();
-            });
-        }
-
-        function renderAdminLogs() {
-            const s = document.getElementById('search-input').value.toUpperCase();
-            document.getElementById('admin-body').innerHTML = logs.filter(l => l.nom.toUpperCase().includes(s) || l.mat.toString().includes(s)).reverse().map((l, i) => `
-                <tr>
-                    <td>${l.date}</td>
-                    <td>${l.mat}</td>
-                    <td>${l.nom}</td>
-                    <td><span class="badge" style="background:${l.score>=75?'var(--success)':'var(--danger)'}">${l.score}%</span></td>
-                    <td>T${l.attempt}</td>
-                    <td><button onclick="downloadPDF(${logs.length - 1 - i})">PDF</button></td>
-                </tr>`).join('');
-        }
-
-        function downloadPDF(idx) {
-            const l = logs[idx];
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            doc.setTextColor(230, 126, 34); doc.setFontSize(22); doc.text("ONE MOBILITY", 105, 20, { align: 'center' });
-            doc.setTextColor(44, 62, 80); doc.setFontSize(16); doc.text("FICHE D'ÉVALUATION", 105, 30, { align: 'center' });
-            doc.setLineWidth(0.5); doc.line(20, 35, 190, 35);
-            doc.setTextColor(0); doc.setFontSize(11);
-            doc.text(`Nom: ${l.nom}`, 20, 45); doc.text(`Date: ${l.date}`, 120, 45);
-            doc.text(`Matricule: ${l.mat}`, 20, 53); doc.text(`Module: ${l.theme}`, 120, 53);
-            doc.text(`Score: ${l.score}% (${l.score >= 75 ? 'APTE' : 'INAPTE'})`, 20, 61);
-            
-            doc.autoTable({
-                startY: 70,
-                head: [['#', "Critère", 'Réponse', 'Status']],
-                body: l.questions.map((q, i) => [i + 1, q.f, l.ans[i] ? 'VRAI' : 'FAUX', (l.ans[i] === q.r ? 'OK' : 'NOK')]),
-                headStyles: { fillColor: [44, 62, 80] }
-            });
-            
-            const finalY = doc.lastAutoTable.finalY + 10;
-            doc.text("Signature:", 20, finalY);
-            if (l.sig) doc.addImage(l.sig, 'PNG', 20, finalY + 5, 40, 15);
-            doc.save(`Audit_${l.mat}_${l.theme}.pdf`);
+            canvas.addEventListener('mousedown', start); canvas.addEventListener('mousemove', move); window.addEventListener('mouseup', stop);
+            canvas.addEventListener('touchstart', start, {passive: false}); canvas.addEventListener('touchmove', move, {passive: false}); canvas.addEventListener('touchend', stop);
         }
 
         function clearSig() { sigCtx.clearRect(0,0,canvas.width,canvas.height); isSigned = false; }
 
-        function exportToExcel() {
-            const data = logs.map(l => ({ Date: l.date, Mat: l.mat, Nom: l.nom, Module: l.theme, Tentative: "T"+l.attempt, Score: l.score+"%", Resultat: l.score >= 75 ? "APTE" : "INAPTE" }));
-            const ws = XLSX.utils.json_to_sheet(data);
-            const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Logs");
-            XLSX.writeFile(wb, "Rapport_Audit.xlsx");
+        function submitTest() {
+            if(userAnswers.includes(null) || !isSigned) return alert("Remplissez tout et signez !");
+            
+            const btn = document.getElementById('btn-submit');
+            btn.disabled = true; btn.innerText = "ENVOI EN COURS...";
+
+            const theme = document.getElementById('active-theme').innerText;
+            const score = Math.round(userAnswers.filter((a,i) => a === DB[theme][i].r).length / userAnswers.length * 100);
+
+            const payload = {
+                mat: document.getElementById('mat').value,
+                nom: document.getElementById('nom').value,
+                embauche: document.getElementById('date_embauche').value,
+                theme: theme,
+                score: score,
+                attempt: 1
+            };
+
+            fetch(GOOGLE_SHEET_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                body: JSON.stringify(payload)
+            }).then(() => {
+                alert("✅ Test validé et envoyé au Google Sheet !");
+                location.reload();
+            }).catch(() => {
+                alert("Erreur d'envoi. Vérifiez votre connexion.");
+                btn.disabled = false; btn.innerText = "VALIDER LE TEST";
+            });
         }
     </script>
 </body>
