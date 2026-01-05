@@ -69,7 +69,7 @@
         <div class="container">
             <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:15px">
                 <button class="btn-action" style="background:var(--om-orange); flex:1" onclick="openEditor()">⚙️ GESTION</button>
-                <button class="btn-action" style="background:var(--success); flex:1" onclick="exportToExcel()">📊 EXCEL</button>
+                <button class="btn-action" style="background:var(--success); flex:1" onclick="exportToExcel()">📊 EXCEL LOCAL</button>
                 <button class="btn-action" style="background:var(--om-blue); flex:1" onclick="window.open('https://docs.google.com/spreadsheets/d/1vA5W3U6D6w8A9v-m8X6U6V8u-m7i0-r1e4s8f9v4u8/edit')">📂 GOOGLE SHEETS</button>
             </div>
             <div class="card"><input type="text" id="search-input" onkeyup="renderAdminLogs()" placeholder="Chercher..."><table style="margin-top:10px"><thead><tr><th>Date</th><th>Mat.</th><th>Nom</th><th>Score</th><th>Test</th><th>Action</th></tr></thead><tbody id="admin-body"></tbody></table></div>
@@ -83,13 +83,6 @@
                     <h2 style="margin:0">⚙️ Gestion du Contenu</h2>
                     <button onclick="closeEditor()" style="font-size:30px; border:none; background:none; cursor:pointer">&times;</button>
                 </div>
-                <div style="background:#f0f4f8; padding:15px; border-radius:10px; margin-bottom:20px;">
-                    <label><b>Ajouter un Module :</b></label>
-                    <div style="display:flex; gap:10px; margin-top:5px">
-                        <input id="new-mod-name" type="text" placeholder="Titre du module">
-                        <button class="btn-action" style="background:var(--success)" onclick="addNewModule()">+ Créer</button>
-                    </div>
-                </div>
                 <div id="editor-content"></div>
             </div>
         </div>
@@ -100,9 +93,8 @@
         const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbxYQD1arNlj7JtscMol4YYkKFfNKa2uli4Rxu6oxPQPlSdAKZ3mtpiryTYt4qrp_6qG-Q/exec"; 
 
         let DB = JSON.parse(localStorage.getItem('OM_DB')) || { 
-            "Qualité & 14 Principes": [{f:"Contrôle visuel effectué?", a:"تم الفحص البصري؟", r:true}, {f:"Respect du standard?", a:"احترام المعايير؟", r:true}],
-            "Flux, Composants & Lean": [{f:"Flux respecté?", a:"احترام التدفق؟", r:true}],
-            "Livre d'Accueil & HSE": [{f:"EPI porté?", a:"ارتداء معدات الوقاية؟", r:true}]
+            "Qualité & 14 Principes": [{f:"Standard respecté?", a:"احترام المعايير؟", r:true}],
+            "Flux & Lean": [{f:"Flux respecté?", a:"احترام التدفق؟", r:true}]
         };
         let logs = JSON.parse(localStorage.getItem('OM_LOGS')) || [];
         let userAnswers = [], sigCtx, canvas, currentModule, currentAttempt = 1, isSigned = false;
@@ -117,39 +109,9 @@
         function renderEditor() {
             let h = '';
             for(let t in DB) {
-                h += `
-                <div class="module-block">
-                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding-bottom:10px; margin-bottom:15px">
-                        <b style="font-size:18px; color:var(--om-blue)">${t}</b>
-                        <button onclick="deleteModule('${t}')" style="background:var(--danger); color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer">Supprimer</button>
-                    </div>
-                    <div>
-                        ${DB[t].map((q, i) => `
-                            <div class="question-row">
-                                <span style="font-weight:bold">${i+1}</span>
-                                <input style="flex:2" value="${q.f}" onchange="DB['${t}'][${i}].f=this.value; saveDB()" placeholder="Français">
-                                <input style="flex:2; text-align:right" dir="rtl" value="${q.a}" onchange="DB['${t}'][${i}].a=this.value; saveDB()" placeholder="العربية">
-                                <select style="width:90px" onchange="DB['${t}'][${i}].r=(this.value==='true'); saveDB()">
-                                    <option value="true" ${q.r?'selected':''}>VRAI</option>
-                                    <option value="false" ${!q.r?'selected':''}>FAUX</option>
-                                </select>
-                                <button onclick="deleteQ('${t}',${i})" style="color:red; border:none; background:none; font-size:20px; cursor:pointer">&times;</button>
-                            </div>
-                        `).join('')}
-                    </div>
-                    <button class="btn-action" style="background:var(--om-orange); margin-top:10px; padding:8px 15px; font-size:13px" onclick="addQ('${t}')">+ Ajouter une Question</button>
-                </div>`;
+                h += `<div class="module-block"><b>${t}</b><button onclick="addQ('${t}')">+ Question</button></div>`;
             }
             document.getElementById('editor-content').innerHTML = h;
-        }
-
-        function saveDB() { localStorage.setItem('OM_DB', JSON.stringify(DB)); }
-        function addQ(t) { DB[t].push({f:"Nouvelle question", a:"سؤال جديد", r:true}); saveDB(); renderEditor(); }
-        function deleteQ(t,i) { if(confirm("Supprimer?")) { DB[t].splice(i,1); saveDB(); renderEditor(); } }
-        function deleteModule(t) { if(confirm("Supprimer tout le module?")) { delete DB[t]; saveDB(); renderEditor(); } }
-        function addNewModule() {
-            const n = document.getElementById('new-mod-name').value;
-            if(n && !DB[n]) { DB[n] = [{f:"Question 1", a:"سؤال 1", r:true}]; saveDB(); renderEditor(); document.getElementById('new-mod-name').value=''; }
         }
 
         function checkEligibility() {
@@ -157,7 +119,7 @@
             const theme = document.getElementById('theme_select').value;
             if(!mat || !document.getElementById('nom').value) return alert("Remplir tout!");
             const history = logs.filter(l => l.mat == mat && l.theme == theme);
-            if(history.some(l => l.score >= 75)) return alert("L'opérateur est déjà APTE.");
+            if(history.some(l => l.score >= 75)) return alert("Déjà APTE.");
             currentAttempt = history.length + 1;
             startQuiz(theme);
         }
@@ -170,7 +132,7 @@
             userAnswers = new Array(DB[theme].length).fill(null);
             document.getElementById('questions-list').innerHTML = DB[theme].map((q, i) => `
                 <div class="q-card">
-                    <p><b>Q${i+1}:</b> ${q.f}</p><p dir="rtl" style="color:#666">${q.a}</p>
+                    <p><b>Q${i+1}:</b> ${q.f}</p>
                     <div style="display:flex; gap:10px; margin-top:10px">
                         <button class="btn-ans" id="v-${i}" onclick="setAns(${i},true)">VRAI</button>
                         <button class="btn-ans" id="f-${i}" onclick="setAns(${i},false)">FAUX</button>
@@ -217,14 +179,10 @@
             fetch(GOOGLE_SHEET_URL, {
                 method: 'POST',
                 mode: 'no-cors',
-                cache: 'no-cache',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(logEntry)
             }).then(() => {
-                alert("Résultat validé ! Données envoyées à Google Sheets.");
-                location.reload();
-            }).catch(err => {
-                alert("Validé localement. Vérifiez la connexion pour Sheets.");
+                alert("Résultat validé !");
                 location.reload();
             });
         }
@@ -239,49 +197,17 @@
             const l = logs[idx];
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
-            doc.setTextColor(230, 126, 34); doc.setFontSize(22); doc.setFont(undefined, 'bold');
-            doc.text("ONE MOBILITY", 105, 20, { align: 'center' });
-            doc.setTextColor(44, 62, 80); doc.setFontSize(16); doc.text("FICHE D'ÉVALUATION DES COMPÉTENCES", 105, 30, { align: 'center' });
-            doc.setLineWidth(0.5); doc.line(20, 35, 190, 35);
-            doc.setTextColor(0); doc.setFontSize(11);
-            doc.setFont(undefined, 'bold'); doc.text("Nom et Prénom :", 20, 45); doc.setFont(undefined, 'normal'); doc.text(`${l.nom}`, 55, 45);
-            doc.setFont(undefined, 'bold'); doc.text("Date du Test :", 120, 45); doc.setFont(undefined, 'normal'); doc.text(`${l.date}`, 155, 45);
-            doc.setFont(undefined, 'bold'); doc.text("Matricule :", 20, 53); doc.setFont(undefined, 'normal'); doc.text(`${l.mat}`, 55, 53);
-            doc.setFont(undefined, 'bold'); doc.text("Module :", 120, 53); doc.setFont(undefined, 'normal'); doc.text(`${l.theme}`, 155, 53);
-            doc.setFont(undefined, 'bold'); doc.text("Date d'embauche :", 20, 61); doc.setFont(undefined, 'normal'); doc.text(`${l.embauche || '-'}`, 55, 61);
-            doc.setFont(undefined, 'bold'); doc.text("Évaluation :", 120, 61); doc.setTextColor(230, 126, 34); doc.text(l.attempt === 1 ? "Premier Test" : "Deuxième Test", 155, 61);
-            doc.setTextColor(39, 174, 96); doc.setFontSize(14); doc.setFont(undefined, 'bold');
-            doc.text(`SCORE FINAL : ${l.score}% (${l.score >= 75 ? 'APTE' : 'INAPTE'})`, 105, 75, { align: 'center' });
-            doc.autoTable({
-                startY: 85,
-                head: [['#', "Critères d'évaluation", 'Réponse', 'Résultat']],
-                body: l.questions.map((q, i) => [i + 1, q.f, l.ans[i] ? 'VRAI' : 'FAUX', (l.ans[i] === q.r ? 'CONFORME' : 'NON CONFORME')]),
-                theme: 'grid',
-                headStyles: { fillColor: [44, 62, 80] }
-            });
-            const finalY = doc.lastAutoTable.finalY + 20;
-            doc.setTextColor(0); doc.text("Signature du Collaborateur", 35, finalY);
-            if (l.sig) doc.addImage(l.sig, 'PNG', 35, finalY + 5, 40, 15);
+            doc.text("ONE MOBILITY - FICHE D'AUDIT", 105, 20, { align: 'center' });
+            doc.text(`Candidat: ${l.nom} (${l.mat})`, 20, 40);
+            doc.text(`Score: ${l.score}%`, 20, 50);
             doc.save(`Audit_${l.mat}.pdf`);
         }
 
         function clearSig() { sigCtx.clearRect(0,0,canvas.width,canvas.height); isSigned = false; }
-
         function exportToExcel() {
-            const data = logs.map(l => ({ 
-                Date_Test: l.date, 
-                Matricule: l.mat, 
-                Nom_Complet: l.nom, 
-                Date_Embauche: l.embauche || '-', 
-                Module: l.theme,
-                Tentative: "T"+l.attempt,
-                Score: l.score+"%",
-                Resultat: l.score >= 75 ? "APTE" : "INAPTE"
-            }));
-            const ws = XLSX.utils.json_to_sheet(data);
-            const wb = XLSX.utils.book_new(); 
-            XLSX.utils.book_append_sheet(wb, ws, "Audit_Logs");
-            XLSX.writeFile(wb, "Rapport_Audit_OneMobility.xlsx");
+            const ws = XLSX.utils.json_to_sheet(logs);
+            const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Audit");
+            XLSX.writeFile(wb, "Rapport_Audit.xlsx");
         }
     </script>
 </body>
