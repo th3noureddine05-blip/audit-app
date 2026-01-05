@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>One Mobility - Audit System</title>
+    <title>One Mobility - Audit System V32</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
@@ -26,7 +26,10 @@
         #sig-canvas { border: 2px dashed #ccc; width: 100%; height: 160px; background: #fff; touch-action: none; border-radius: 10px; margin-top: 10px; }
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; font-size: 14px; }
-        #sheets-viewer { width: 100%; height: 600px; border: 2px solid #ddd; border-radius: 10px; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; overflow-y: auto; }
+        .badge { padding: 4px 8px; border-radius: 5px; font-size: 12px; font-weight: bold; color: white; }
+        .module-block { border: 1px solid #ddd; padding: 15px; border-radius: 10px; margin-bottom: 20px; background: #fff; border-top: 4px solid var(--om-blue); }
+        .question-row { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; background: #f9f9f9; padding: 10px; border-radius: 8px; }
     </style>
 </head>
 <body>
@@ -44,25 +47,20 @@
         <header><div>Identification</div><button onclick="location.reload()">Retour</button></header>
         <div class="container">
             <div class="card" style="max-width:480px; margin: auto;">
-                <label>Matricule</label><input id="mat" type="number">
-                <label>Nom & Prénom</label><input id="nom" type="text">
+                <label>Matricule</label><input id="mat" type="number" placeholder="Ex: 12345">
+                <label>Nom & Prénom</label><input id="nom" type="text" placeholder="Nom complet">
                 <label>Date d'embauche</label><input id="date_embauche" type="date">
-                <label>Module</label><select id="theme_select"></select>
-                <button class="btn-action" style="background:var(--om-orange); width:100%; margin-top:20px; padding:15px" onclick="checkEligibility()">SUIVANT</button>
+                <label>Module d'audit</label><select id="theme_select"></select>
+                <button class="btn-action" style="background:var(--om-orange); width:100%; margin-top:20px; padding:15px" onclick="checkEligibility()">COMMENCER</button>
             </div>
         </div>
     </div>
 
     <div id="quiz-view" class="hidden">
-        <header><div id="active-theme"></div><div id="quiz-attempt" style="font-weight:bold; color:var(--om-orange)"></div></header>
-        <div class="container">
-            <div id="questions-list"></div>
-            <div class="card">
-                <label>Signature :</label>
-                <canvas id="sig-canvas"></canvas>
-                <button onclick="clearSig()" style="color:red; background:none; border:none; cursor:pointer">Effacer</button>
-            </div>
-            <button class="btn-action" style="background:var(--success); width:100%; padding:20px; font-size:18px" onclick="submitTest()">VALIDER</button>
+        <header><div id="active-theme"></div><div id="quiz-attempt-badge"></div></header>
+        <div class="container"><div id="questions-list"></div>
+            <div class="card"><label><b>Signature Obligatoire :</b></label><canvas id="sig-canvas"></canvas><button onclick="clearSig()" style="color:red; background:none; border:none; cursor:pointer">Effacer</button></div>
+            <button class="btn-action" style="background:var(--success); width:100%; padding:20px;" onclick="submitTest()">VALIDER LE TEST</button>
         </div>
     </div>
 
@@ -72,72 +70,94 @@
             <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:15px">
                 <button class="btn-action" style="background:var(--om-orange); flex:1" onclick="openEditor()">⚙️ GESTION</button>
                 <button class="btn-action" style="background:var(--success); flex:1" onclick="exportToExcel()">📊 EXCEL</button>
-                <button class="btn-action" style="background:var(--om-blue); flex:1" onclick="toggleSheets()">📉 GOOGLE SHEETS</button>
+                <button class="btn-action" style="background:var(--om-blue); flex:1" onclick="window.open('https://docs.google.com/spreadsheets/d/1vA5W3U6D6w8A9v-m8X6U6V8u-m7i0-r1e4s8f9v4u8/edit')">📂 GOOGLE SHEETS</button>
             </div>
-
-            <div id="sheets-container" class="hidden">
-                <div class="card">
-                    <iframe id="sheets-viewer" src="https://docs.google.com/spreadsheets/d/1Ky0apw_4lvqqHqB3XkKKymVZRnYEzoN3_wdfO_EMnlU/preview"></iframe>
-                </div>
-            </div>
-
-            <div class="card">
-                <input type="text" id="search-input" onkeyup="renderAdminLogs()" placeholder="Rechercher...">
-                <div style="overflow-x:auto; margin-top:15px;">
-                    <table>
-                        <thead><tr><th>Date</th><th>Mat.</th><th>Nom</th><th>Test</th><th>Score</th><th>Action</th></tr></thead>
-                        <tbody id="admin-body"></tbody>
-                    </table>
-                </div>
-            </div>
+            <div class="card"><input type="text" id="search-input" onkeyup="renderAdminLogs()" placeholder="Chercher..."><table style="margin-top:10px"><thead><tr><th>Date</th><th>Mat.</th><th>Nom</th><th>Score</th><th>Test</th><th>Action</th></tr></thead><tbody id="admin-body"></tbody></table></div>
         </div>
     </div>
 
     <div id="editor-modal" class="modal-overlay hidden">
-        <div class="card" style="width:90%; max-width:850px; max-height:85vh; overflow-y:auto; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:1001; border: 2px solid var(--om-orange);">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <h3>Configuration</h3>
-                <button onclick="closeEditor()" style="font-size:30px; border:none; background:none; cursor:pointer">&times;</button>
+        <div class="container" style="margin-top:40px">
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px">
+                    <h2 style="margin:0">⚙️ Gestion du Contenu</h2>
+                    <button onclick="closeEditor()" style="font-size:30px; border:none; background:none; cursor:pointer">&times;</button>
+                </div>
+                <div style="background:#f0f4f8; padding:15px; border-radius:10px; margin-bottom:20px;">
+                    <label><b>Ajouter un Module :</b></label>
+                    <div style="display:flex; gap:10px; margin-top:5px">
+                        <input id="new-mod-name" type="text" placeholder="Titre du module">
+                        <button class="btn-action" style="background:var(--success)" onclick="addNewModule()">+ Créer</button>
+                    </div>
+                </div>
+                <div id="editor-content"></div>
             </div>
-            <div id="editor-content"></div>
         </div>
     </div>
 
     <script>
-        let DB = JSON.parse(localStorage.getItem('OM_DB')) || {
-            "Flux, Composants & Lean": [
-                { f: "Un câble est un ensemble de fils et connecteurs.", a: "الكابل هو مجموعة من الأسلاك والموصلات.", r: true },
-                { f: "Le rôle du câble est de transporter l'énergie.", a: "دور الكابل هو نقل الطاقة.", r: true },
-                { f: "Le terminal assure la connexion entre deux câbles.", a: "المحطة الطرفية تضمن الاتصال بين كابلين.", r: true },
-                { f: "Le bouchon (seal) empêche l'entrée d'eau.", a: "السدادة (seal) تمنع دخول الماء.", r: true },
-                { f: "Le Lean sert uniquement à réduire les coûts.", a: "اللين يهدف فقط لتقليل التكاليف.", r: false },
-                { f: "5S : Trier, Ranger, Nettoyer, Standardiser, Respecter.", a: "5S: ترتيب، تنظيم، تنظيف، تقنين، احترام.", r: true }
-            ]
+        // LIEN GOOGLE SCRIPT M9ADD
+        const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbxYQD1arNlj7JtscMol4YYkKFfNKa2uli4Rxu6oxPQPlSdAKZ3mtpiryTYt4qrp_6qG-Q/exec"; 
+
+        let DB = JSON.parse(localStorage.getItem('OM_DB')) || { 
+            "Qualité & 14 Principes": [{f:"Contrôle visuel effectué?", a:"تم الفحص البصري؟", r:true}, {f:"Respect du standard?", a:"احترام المعايير؟", r:true}],
+            "Flux, Composants & Lean": [{f:"Flux respecté?", a:"احترام التدفق؟", r:true}],
+            "Livre d'Accueil & HSE": [{f:"EPI porté?", a:"ارتداء معدات الوقاية؟", r:true}]
         };
         let logs = JSON.parse(localStorage.getItem('OM_LOGS')) || [];
         let userAnswers = [], sigCtx, canvas, currentModule, currentAttempt = 1, isSigned = false;
 
-        window.onload = () => { 
-            new QRCode(document.getElementById("qrcode"), { text: window.location.href, width: 120, height: 120 });
-            updateThemeList();
-        };
+        window.onload = () => { new QRCode(document.getElementById("qrcode"), { text: window.location.href, width: 120, height: 120 }); updateThemeList(); };
+        function showSection(id) { document.querySelectorAll('body > div:not(header):not(.modal-overlay)').forEach(d => d.classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); }
+        function openAdmin() { if(prompt("Code Access:") === "123") { showSection('admin-view'); renderAdminLogs(); } }
+        function updateThemeList() { document.getElementById('theme_select').innerHTML = Object.keys(DB).map(t => `<option value="${t}">${t}</option>`).join(''); }
+        function openEditor() { document.getElementById('editor-modal').classList.remove('hidden'); renderEditor(); }
+        function closeEditor() { document.getElementById('editor-modal').classList.add('hidden'); updateThemeList(); }
 
-        function showSection(id) {
-            document.querySelectorAll('body > div:not(header):not(.modal-overlay)').forEach(d => d.classList.add('hidden'));
-            document.getElementById(id).classList.remove('hidden');
+        function renderEditor() {
+            let h = '';
+            for(let t in DB) {
+                h += `
+                <div class="module-block">
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding-bottom:10px; margin-bottom:15px">
+                        <b style="font-size:18px; color:var(--om-blue)">${t}</b>
+                        <button onclick="deleteModule('${t}')" style="background:var(--danger); color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer">Supprimer</button>
+                    </div>
+                    <div>
+                        ${DB[t].map((q, i) => `
+                            <div class="question-row">
+                                <span style="font-weight:bold">${i+1}</span>
+                                <input style="flex:2" value="${q.f}" onchange="DB['${t}'][${i}].f=this.value; saveDB()" placeholder="Français">
+                                <input style="flex:2; text-align:right" dir="rtl" value="${q.a}" onchange="DB['${t}'][${i}].a=this.value; saveDB()" placeholder="العربية">
+                                <select style="width:90px" onchange="DB['${t}'][${i}].r=(this.value==='true'); saveDB()">
+                                    <option value="true" ${q.r?'selected':''}>VRAI</option>
+                                    <option value="false" ${!q.r?'selected':''}>FAUX</option>
+                                </select>
+                                <button onclick="deleteQ('${t}',${i})" style="color:red; border:none; background:none; font-size:20px; cursor:pointer">&times;</button>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <button class="btn-action" style="background:var(--om-orange); margin-top:10px; padding:8px 15px; font-size:13px" onclick="addQ('${t}')">+ Ajouter une Question</button>
+                </div>`;
+            }
+            document.getElementById('editor-content').innerHTML = h;
         }
 
-        function toggleSheets() { document.getElementById('sheets-container').classList.toggle('hidden'); }
-        function openAdmin() { if(prompt("Code:") === "123") { showSection('admin-view'); renderAdminLogs(); } }
-        function updateThemeList() { document.getElementById('theme_select').innerHTML = Object.keys(DB).map(t => `<option value="${t}">${t}</option>`).join(''); }
+        function saveDB() { localStorage.setItem('OM_DB', JSON.stringify(DB)); }
+        function addQ(t) { DB[t].push({f:"Nouvelle question", a:"سؤال جديد", r:true}); saveDB(); renderEditor(); }
+        function deleteQ(t,i) { if(confirm("Supprimer?")) { DB[t].splice(i,1); saveDB(); renderEditor(); } }
+        function deleteModule(t) { if(confirm("Supprimer tout le module?")) { delete DB[t]; saveDB(); renderEditor(); } }
+        function addNewModule() {
+            const n = document.getElementById('new-mod-name').value;
+            if(n && !DB[n]) { DB[n] = [{f:"Question 1", a:"سؤال 1", r:true}]; saveDB(); renderEditor(); document.getElementById('new-mod-name').value=''; }
+        }
 
         function checkEligibility() {
             const mat = document.getElementById('mat').value;
             const theme = document.getElementById('theme_select').value;
-            if(!mat || !document.getElementById('nom').value) return alert("Champs obligatoires !");
+            if(!mat || !document.getElementById('nom').value) return alert("Remplir tout!");
             const history = logs.filter(l => l.mat == mat && l.theme == theme);
-            if(history.some(l => l.score >= 75)) return alert("✅ Déjà APTE.");
-            if(history.length >= 2) return alert("❌ Tentatives épuisées.");
+            if(history.some(l => l.score >= 75)) return alert("L'opérateur est déjà APTE.");
             currentAttempt = history.length + 1;
             startQuiz(theme);
         }
@@ -145,16 +165,15 @@
         function startQuiz(theme) {
             currentModule = theme;
             document.getElementById('active-theme').innerText = theme;
-            document.getElementById('quiz-attempt').innerText = currentAttempt === 1 ? "Premier Test" : "2ème Test";
+            document.getElementById('quiz-attempt-badge').innerText = "Test N° " + currentAttempt;
             showSection('quiz-view');
             userAnswers = new Array(DB[theme].length).fill(null);
             document.getElementById('questions-list').innerHTML = DB[theme].map((q, i) => `
                 <div class="q-card">
-                    <p style="font-size:18px;"><b>Q${i+1}:</b> ${q.f}</p>
-                    <p dir="rtl" style="color:#666;">${q.a}</p>
+                    <p><b>Q${i+1}:</b> ${q.f}</p><p dir="rtl" style="color:#666">${q.a}</p>
                     <div style="display:flex; gap:10px; margin-top:10px">
-                        <button class="btn-ans" id="v-${i}" onclick="setAns(${i},true)">VRAI / صحيح</button>
-                        <button class="btn-ans" id="f-${i}" onclick="setAns(${i},false)">FAUX / خطأ</button>
+                        <button class="btn-ans" id="v-${i}" onclick="setAns(${i},true)">VRAI</button>
+                        <button class="btn-ans" id="f-${i}" onclick="setAns(${i},false)">FAUX</button>
                     </div>
                 </div>`).join('');
             setTimeout(initSig, 500);
@@ -167,9 +186,10 @@
         }
 
         function initSig() {
-            canvas = document.getElementById('sig-canvas'); sigCtx = canvas.getContext('2d'); canvas.width = canvas.offsetWidth;
+            canvas = document.getElementById('sig-canvas'); sigCtx = canvas.getContext('2d');
+            canvas.width = canvas.offsetWidth; canvas.height = 160;
             let draw = false;
-            const start = (e) => { draw = true; isSigned = true; sigCtx.beginPath(); if(e.cancelable) e.preventDefault(); };
+            const start = (e) => { draw = true; isSigned = true; sigCtx.beginPath(); };
             const move = (e) => { if(!draw) return; const r = canvas.getBoundingClientRect(); sigCtx.lineTo((e.touches?e.touches[0].clientX:e.clientX)-r.left, (e.touches?e.touches[0].clientY:e.clientY)-r.top); sigCtx.stroke(); };
             canvas.addEventListener('mousedown', start); canvas.addEventListener('mousemove', move);
             canvas.addEventListener('touchstart', start); canvas.addEventListener('touchmove', move);
@@ -177,108 +197,92 @@
         }
 
         function submitTest() {
-            if(userAnswers.includes(null) || !isSigned) return alert("Incomplet !");
+            if(userAnswers.includes(null) || !isSigned) return alert("Répondez à tout et signez !");
             const score = Math.round(userAnswers.filter((a,i) => a === DB[currentModule][i].r).length / userAnswers.length * 100);
-            logs.push({
-                date: new Date().toLocaleDateString('fr-FR'),
-                mat: document.getElementById('mat').value,
-                nom: document.getElementById('nom').value,
-                embauche: document.getElementById('date_embauche').value,
-                theme: currentModule,
-                attempt: currentAttempt,
-                score: score,
-                sig: canvas.toDataURL(),
-                ans: userAnswers,
-                questions: [...DB[currentModule]]
-            });
+            
+            const logEntry = { 
+                date: new Date().toLocaleDateString('fr-FR'), 
+                mat: document.getElementById('mat').value, 
+                nom: document.getElementById('nom').value, 
+                embauche: document.getElementById('date_embauche').value, 
+                theme: currentModule, 
+                attempt: currentAttempt, 
+                score: score
+            };
+
+            logs.push({ ...logEntry, sig: canvas.toDataURL(), ans: [...userAnswers], questions: [...DB[currentModule]] });
             localStorage.setItem('OM_LOGS', JSON.stringify(logs));
-            alert(score >= 75 ? "APTE ("+score+"%)" : "ÉCHEC ("+score+"%)");
-            location.reload();
+
+            // ENVOI GOOGLE SHEETS
+            fetch(GOOGLE_SHEET_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                cache: 'no-cache',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(logEntry)
+            }).then(() => {
+                alert("Résultat validé ! Données envoyées à Google Sheets.");
+                location.reload();
+            }).catch(err => {
+                alert("Validé localement. Vérifiez la connexion pour Sheets.");
+                location.reload();
+            });
         }
 
         function renderAdminLogs() {
-            const search = document.getElementById('search-input').value.toUpperCase();
-            const filtered = logs.filter(l => l.nom.toUpperCase().includes(search) || l.mat.toString().includes(search)).reverse();
-            document.getElementById('admin-body').innerHTML = filtered.map((l, i) => `
-                <tr><td>${l.date}</td><td>${l.mat}</td><td>${l.nom}</td><td>${l.attempt}</td><td><b style="color:${l.score>=75?'green':'red'}">${l.score}%</b></td><td><button onclick="downloadPDF(${logs.indexOf(l)})" style="background:var(--om-blue); color:white; border:none; padding:5px; border-radius:5px; cursor:pointer">PDF</button></td></tr>`).join('');
+            const s = document.getElementById('search-input').value.toUpperCase();
+            document.getElementById('admin-body').innerHTML = logs.filter(l => l.nom.toUpperCase().includes(s) || l.mat.toString().includes(s)).reverse().map(l => `
+                <tr><td>${l.date}</td><td>${l.mat}</td><td>${l.nom}</td><td><span class="badge" style="background:${l.score>=75?'var(--success)':'var(--danger)'}">${l.score}%</span></td><td>T${l.attempt}</td><td><button onclick="downloadPDF(${logs.indexOf(l)})">PDF</button></td></tr>`).join('');
         }
 
-        // PDF TAFAWQI (L-9DIM)
         function downloadPDF(idx) {
             const l = logs[idx];
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
-
-            // Header
-            doc.setFillColor(44, 62, 80);
-            doc.rect(0, 0, 210, 40, 'F');
-            doc.setTextColor(255, 255, 255);
-            doc.setFontSize(22);
-            doc.text("ONE MOBILITY - AUDIT", 105, 20, { align: 'center' });
-            doc.setFontSize(12);
-            doc.text("RAPPORT D'ÉVALUATION TECHNIQUE", 105, 30, { align: 'center' });
-
-            // Infos
-            doc.setTextColor(0, 0, 0);
-            doc.setFontSize(11);
-            doc.setFont(undefined, 'bold');
-            doc.text(`Nom: ${l.nom}`, 20, 50);
-            doc.text(`Matricule: ${l.mat}`, 20, 58);
-            doc.text(`Date Audit: ${l.date}`, 130, 50);
-            doc.text(`Module: ${l.theme}`, 130, 58);
-            doc.text(`Embauche: ${l.embauche || '-'}`, 20, 66);
-            doc.text(`Test: ${l.attempt == 1 ? '1er Essai' : '2ème Essai'}`, 130, 66);
-
-            // Score Highlight
-            doc.setFillColor(l.score >= 75 ? 230 : 240, l.score >= 75 ? 245 : 230, l.score >= 75 ? 230 : 230);
-            doc.rect(20, 75, 170, 15, 'F');
-            doc.setTextColor(l.score >= 75 ? 39 : 192, l.score >= 75 ? 174 : 57, l.score >= 75 ? 96 : 43);
-            doc.setFontSize(16);
-            doc.text(`SCORE FINAL: ${l.score}% (${l.score >= 75 ? 'APTE' : 'INAPTE'})`, 105, 85, { align: 'center' });
-
-            // Table de détails
+            doc.setTextColor(230, 126, 34); doc.setFontSize(22); doc.setFont(undefined, 'bold');
+            doc.text("ONE MOBILITY", 105, 20, { align: 'center' });
+            doc.setTextColor(44, 62, 80); doc.setFontSize(16); doc.text("FICHE D'ÉVALUATION DES COMPÉTENCES", 105, 30, { align: 'center' });
+            doc.setLineWidth(0.5); doc.line(20, 35, 190, 35);
+            doc.setTextColor(0); doc.setFontSize(11);
+            doc.setFont(undefined, 'bold'); doc.text("Nom et Prénom :", 20, 45); doc.setFont(undefined, 'normal'); doc.text(`${l.nom}`, 55, 45);
+            doc.setFont(undefined, 'bold'); doc.text("Date du Test :", 120, 45); doc.setFont(undefined, 'normal'); doc.text(`${l.date}`, 155, 45);
+            doc.setFont(undefined, 'bold'); doc.text("Matricule :", 20, 53); doc.setFont(undefined, 'normal'); doc.text(`${l.mat}`, 55, 53);
+            doc.setFont(undefined, 'bold'); doc.text("Module :", 120, 53); doc.setFont(undefined, 'normal'); doc.text(`${l.theme}`, 155, 53);
+            doc.setFont(undefined, 'bold'); doc.text("Date d'embauche :", 20, 61); doc.setFont(undefined, 'normal'); doc.text(`${l.embauche || '-'}`, 55, 61);
+            doc.setFont(undefined, 'bold'); doc.text("Évaluation :", 120, 61); doc.setTextColor(230, 126, 34); doc.text(l.attempt === 1 ? "Premier Test" : "Deuxième Test", 155, 61);
+            doc.setTextColor(39, 174, 96); doc.setFontSize(14); doc.setFont(undefined, 'bold');
+            doc.text(`SCORE FINAL : ${l.score}% (${l.score >= 75 ? 'APTE' : 'INAPTE'})`, 105, 75, { align: 'center' });
             doc.autoTable({
-                startY: 95,
-                head: [['#', 'Critères / Questions', 'Réponse', 'Validation']],
-                body: l.questions.map((q, i) => [
-                    i + 1,
-                    q.f,
-                    l.ans[i] ? 'VRAI' : 'FAUX',
-                    (l.ans[i] === q.r) ? 'OK' : 'KO'
-                ]),
+                startY: 85,
+                head: [['#', "Critères d'évaluation", 'Réponse', 'Résultat']],
+                body: l.questions.map((q, i) => [i + 1, q.f, l.ans[i] ? 'VRAI' : 'FAUX', (l.ans[i] === q.r ? 'CONFORME' : 'NON CONFORME')]),
                 theme: 'grid',
-                headStyles: { fillColor: [230, 126, 34] },
-                columnStyles: { 0: { cellWidth: 10 }, 1: { cellWidth: 110 } }
+                headStyles: { fillColor: [44, 62, 80] }
             });
-
-            // Signature
             const finalY = doc.lastAutoTable.finalY + 20;
-            doc.setFontSize(10);
-            doc.setTextColor(100);
-            doc.text("Signature du collaborateur :", 20, finalY);
-            if (l.sig) {
-                doc.addImage(l.sig, 'PNG', 20, finalY + 5, 50, 20);
-            }
-
-            doc.save(`Audit_${l.mat}_${l.nom}.pdf`);
+            doc.setTextColor(0); doc.text("Signature du Collaborateur", 35, finalY);
+            if (l.sig) doc.addImage(l.sig, 'PNG', 35, finalY + 5, 40, 15);
+            doc.save(`Audit_${l.mat}.pdf`);
         }
+
+        function clearSig() { sigCtx.clearRect(0,0,canvas.width,canvas.height); isSigned = false; }
 
         function exportToExcel() {
-            const ws = XLSX.utils.json_to_sheet(logs.map(l => ({ Date: l.date, Mat: l.mat, Nom: l.nom, Test: l.attempt, Score: l.score+"%", Result: l.score>=75?'APTE':'INAPTE' })));
-            const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Audit");
-            XLSX.writeFile(wb, "Rapport_Audit.xlsx");
+            const data = logs.map(l => ({ 
+                Date_Test: l.date, 
+                Matricule: l.mat, 
+                Nom_Complet: l.nom, 
+                Date_Embauche: l.embauche || '-', 
+                Module: l.theme,
+                Tentative: "T"+l.attempt,
+                Score: l.score+"%",
+                Resultat: l.score >= 75 ? "APTE" : "INAPTE"
+            }));
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new(); 
+            XLSX.utils.book_append_sheet(wb, ws, "Audit_Logs");
+            XLSX.writeFile(wb, "Rapport_Audit_OneMobility.xlsx");
         }
-
-        function openEditor() { document.getElementById('editor-modal').classList.remove('hidden'); renderEditor(); }
-        function closeEditor() { document.getElementById('editor-modal').classList.add('hidden'); updateThemeList(); }
-        function renderEditor() {
-            let h = '';
-            for(let t in DB) {
-                h += `<div class="card" style="border:1px solid #ddd"><b>Module: ${t}</b><br><small>${DB[t].length} Questions</small></div>`;
-            }
-            document.getElementById('editor-content').innerHTML = h;
-        }
-        function clearSig() { sigCtx.clearRect(0,0,canvas.width,canvas.height); isSigned = false; }
     </script>
 </body>
 </html>
